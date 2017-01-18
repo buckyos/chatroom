@@ -1,0 +1,14 @@
+/* pages/chatroom/QRCode.wxss */
+@import "../common.wxss";
+
+.QRContainer{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+    flex-direction:column;
+}
+#QRCanva{
+    margin-bottom: 20rpx;
+    padding-top:20rpx;
+}

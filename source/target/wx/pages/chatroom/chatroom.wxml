@@ -1,0 +1,30 @@
+<template name="HistoryItem">
+  <view class="HistoryItem" id="id_{{id}}" wx:if="{{type == 1}}">
+    <image src="{{userInfo.avatarUrl}}" style="width:80rpx;height:80rpx;min-width:80rpx;align-self:top;"/>
+    <view class="ContentText">
+      <text>{{content}}</text>
+    </view>
+  </view>
+  <view class="SystemItem" id="id_{{id}}" wx:elif="{{type == 2}}">
+    <text class="SystemItemText">{{content}}</text>
+  </view>
+</template>
+
+<view class="container">
+  <view class="header">
+    <text class="whiteText" id="back" bindtap="onBack">后退</text>
+    <text class="whiteText roomName">{{roomInfo.name}}</text>
+    <image class="headerButton" src="../../pics/refresh_normal.png" style="right:110rpx" bindtap="onFetchMessage" />
+    <image class="headerButton" src="../../pics/userinfo.png" style="right:15rpx;" bindtap="OnEnterAdminRoom"/>
+  </view>
+  <view id="AnnconcementView" wx:if="{{showAnnounce}}" bindtap="OnTapAnnounce">
+    <text>{{announce}}</text>
+  </view>
+  <scroll-view class="HistoryView" scroll-y="true" style="height:{{ViewHeight}}rpx" bindscroll="OnHistoryScroll" scroll-into-view="{{lastviewid}}" upper-threshold="20" bindscrolltoupper="onScrollUpper">
+      <template wx:for="{{history}}" wx:key="{{id}}"is="HistoryItem" data="{{...item}}"/>
+  </scroll-view>
+  <form bindsubmit="onSubmitForm" class="inputSection">
+    <textarea value="{{inputValue}}" id="messageinput" name="message" placeholder="聊天内容" auto-height="true" bindlinechange="OnInputHeightChange"/>
+    <button formType="submit" id="SendButton" type="primary" size="mini">发送</button>
+  </form>
+</view>

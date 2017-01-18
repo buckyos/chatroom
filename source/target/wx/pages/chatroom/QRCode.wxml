@@ -1,0 +1,10 @@
+<!--pages/chatroom/QRCode.wxml-->
+<view class="header">
+    <text class="whiteText" id="back" bindtap="onBack">后退</text>
+    <text class="whiteText roomName">{{name}}</text>
+</view>
+<view class="QRContainer">
+    <image mode="aspectFit" bindload="onLoadQRImage" src="{{QRImageUrl}}" style="width:{{QRImageWidth}}px;height:{{QRImageHeight}}px"/>
+    <text>房间ID: {{id}}</text>
+</view>
+

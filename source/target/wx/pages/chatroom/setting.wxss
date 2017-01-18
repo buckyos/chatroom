@@ -1,0 +1,87 @@
+/* pages/chatroom/setting.wxss */
+
+#avaterContainer {
+    background-color: #ffffff;
+    margin-top: 20px;
+}
+
+#nickNameView {
+    background-color: #ffffff;
+    width: 100%;
+    margin-top: 20px;
+    height: 40px;
+    display: flex;
+    justify-content:space-between;
+    align-items: center;
+    font-size:18px;
+}
+
+#avatarRow {
+    font-size:18px;
+    background-color: #ffffff;
+    width: 100%;
+    margin-top: 20px;
+    height: 128rpx;
+    display: flex;
+    justify-content:space-between;
+    align-items: center;
+}
+
+#nickNameText{
+}
+
+.leftElement{
+    padding-left: 50rpx;
+}
+
+.rightElement{
+    padding-right:50rpx;
+}
+
+#nickNameInput{
+    text-align: right;
+    color:gray;
+}
+
+.avatarImg{
+    width: 96rpx;
+    height: 96rpx;
+    padding-right:50rpx;
+}
+
+.customImg{
+    width: 160rpx;
+    height: 160rpx;
+    padding-left: 2rpx;
+    margin-top: 20rpx;
+    margin-left: 20rpx;
+}
+
+.avaterView{
+    font-size:18px;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: row;
+    justify-content:flex-begin;
+    flex-wrap:wrap;
+    width:100%;
+    align-items: center;
+    margin-top: 20px;
+}
+
+#avatarViewText{
+    background-color: #ffffff;
+    width:100%;
+    padding-left:30rpx;
+    padding-top: 20rpx;
+}
+
+#recoveryAvatarText{
+    font-size:18px;
+    background-color: #ffffff;
+    width:100%;
+    color:blue;
+    /*text-decoration:underline;*/
+    padding-top: 30rpx;
+    padding-left:50rpx;
+}

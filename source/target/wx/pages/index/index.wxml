@@ -1,0 +1,25 @@
+<!--index.wxml-->
+<template name="roomItem">
+  <view class="roomItem" data-id="{{id}}" data-admin="{{roomAdmin}}" data-name="{{name}}" catchtap="OnEnterRoomTap">
+    <text style="margin-left:5px">{{name}}</text>
+    <image id="adminBtn" wx:if="{{roomAdmin}}" src="../../pics/userinfo.png" class="AdminLogo" bindtap="OnEnterAdminRoom"/>
+  </view>
+</template>
+
+<view class="container">
+  <view class="header">
+    <image class="userinfo-avatar" src="{{userInfo.customImg}}" background-size="cover" bindtap="onClickSetting"/>
+    <text class="userinfo-nickname">{{userInfo.customName}}</text>
+    <image class="headerButton" src="../../pics/refresh_normal.png" style="right:120rpx" bindtap="onClickRefreshBtn" />
+    <image class="headerButton" src="../../pics/add_normal.png" style="right:30rpx;" bindtap="onClickCreateBtn" />
+  </view>
+  <scroll-view class="RoomItemContainter" scroll-y="true" style="height:{{ViewHeight}}rpx">
+    <view wx:for="{{createRooms}}" wx:key="id">
+      <template is="roomItem" data="{{...item, roomAdmin:true}}"/>
+    </view>
+    <view wx:for="{{enterRooms}}" wx:key="id">
+      <template is="roomItem" data="{{...item, roomAdmin:false}}"/>
+    </view>
+  </scroll-view>
+  
+</view>

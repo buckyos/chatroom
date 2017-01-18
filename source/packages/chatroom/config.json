@@ -1,0 +1,21 @@
+{
+	"packageID" : "chatroom",
+	"version" : "1.0.0.0",
+	"build" : 1,
+	"deviceType" : "*",
+	"meta" : { 
+		"desc" : "chat room"
+	},
+	"depends" : [],
+	"modules" : {
+		"chatroom" : "chatroom.js"
+	},
+	"drivers" : [
+	], 
+	"knowledges" : [{"key":"global.events","type":1},
+					{"key":"global.runtimes","type":1},
+					{"key":"global.devices","type":1},
+					{"key":"global.storages","type":1},
+					{"key":"global.loadrules","type":0}],
+	"storages" : ["/chatroom/"]
+}

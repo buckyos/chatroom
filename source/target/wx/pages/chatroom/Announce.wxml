@@ -1,0 +1,12 @@
+<!--pages/chatroom/Announce.wxml-->
+<view class="container">
+    <view class="header">
+        <text id="back" bindtap="onBack">后退</text>
+        <text class="roomName">{{name}}</text>
+        <block wx:if="{{isAdmin}}}">
+            <button wx:if="{{isAdmin}}" id="editButton" type="primary" size="mini" bindtap="onTapEdit">{{editStatus}}</button>
+        </block>
+    </view>
+    <textarea class="AnnounceView" placeholder="当前无系统公告" value="{{announce}}" disabled="{{disableEdit}}" bindinput="OnAnnounceInput" focus="{{editfocus}}" style="height:{{editHeight}}rpx"/>
+</view>
+

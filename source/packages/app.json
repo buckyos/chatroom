@@ -1,0 +1,7 @@
+{
+  "appid": "从巴克云网站上拿到的appid",
+  "repositoryHost": "https://dev.tinyappcloud.com/services/repository71",
+  "knowledgeHost": "https://dev.tinyappcloud.com/services/knowledge/get_value",
+  "appver" : "1.0.0.1",
+  "token" : "abcdef0123"
+}

@@ -1,0 +1,102 @@
+@import "../common.wxss";
+
+.container{
+  background-color: #ffffff;
+}
+.inputSection{
+    display: inline-block;
+    bottom:0;
+    width: 95%;
+    padding-top: 20rpx;
+    margin: 0 auto;
+    padding-bottom: 20rpx;
+}
+#SendButton{
+  width: 90rpx;
+  padding:0px 0px;
+  float:right;
+  position:absolute;
+  border-radius:4px;
+  bottom: 16rpx;
+  right:20rpx;
+}
+.roomName {
+  height:60rpx;
+  font-size:50rpx;
+}
+#messageinput{
+  display:inline-block;
+  float:left;
+  width:85%;
+  min-height:60rpx;
+  border-bottom: solid 1px;
+  border-bottom-color: #DDDDDD;
+}
+
+.HistoryView{
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width:100%;
+  background-color: #EAEAEA;
+  padding-top: 20rpx;
+   border-bottom: solid 1px;
+   border-bottom-color: #DDDDDD;
+  }
+
+.HistoryItem{
+  display:inline-flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: top;
+  min-height:80rpx;
+  margin-bottom: 10px;
+  width:80%;
+  margin-left:28rpx;
+}
+
+.HistorySelfItem{
+  display:inline-flex;
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+.ContentText{
+  margin-left: 18rpx;
+  word-break:break-all;
+  border: solid 1px white;
+  border-radius: 4px;
+  background-color: white;
+  padding:4px 6px;
+  display: inline-flex;
+  align-items: center;
+}
+
+#AnnconcementView{
+  height:60rpx;
+  width:100%;
+  background-color: #FBF6D6;
+  border-bottom: solid 1px;
+  border-bottom-color: #E8E3C7;
+  border-top: solid 1px;
+  border-top-color: #E8E3C7;
+  top:96rpx;
+  align-items: center;
+  display:inline-flex;
+  padding-left: 10px;
+  font-size: 17px;
+}
+
+.SystemItem{
+  display:flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.SystemItemText{
+  background-color: #D3D3D3;
+  color: #ffffff;
+  font-size: 16px;
+  border-radius: 4px;
+  padding: 4px 10px 4px 10px;
+}

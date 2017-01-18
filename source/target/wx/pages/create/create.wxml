@@ -1,0 +1,17 @@
+<view>
+  <form bindsubmit="formSubmit">
+    <input name="name" placeholder="房间名" style="height: 60rpx;"/>
+    <!--
+    <picker name="expire" mode="date" value="{{date}}" start="{{startdate}}" end="{{enddate}}" bindchange="bindDateChange">
+      <view class="picker">
+        有效期至:{{date}}
+      </view>
+    </picker>-->
+    <text wx:if="{{limitLocation}}">会场位置：{{address}}</text>
+    <view>
+      <text>我要限定房间的地理位置</text>
+      <switch checked="{{limitLocation}}" bindchange="onLimitLocation"/>
+    </view>
+    <button formType="submit">创建</button>
+  </form>
+</view>

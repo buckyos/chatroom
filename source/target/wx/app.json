@@ -1,0 +1,18 @@
+{
+  "pages":[
+    "pages/index/index",
+    "pages/create/create",
+    "pages/chatroom/chatroom",
+    "pages/chatroom/enterroom",
+    "pages/chatroom/adminroom",
+    "pages/chatroom/setting",
+    "pages/chatroom/QRCode",
+    "pages/chatroom/Announce"
+  ],
+  "window":{
+    "backgroundTextStyle":"light",
+    "navigationBarBackgroundColor": "#555555",
+    "navigationBarTitleText": "会聊",
+    "navigationBarTextStyle":"white"
+  }
+}

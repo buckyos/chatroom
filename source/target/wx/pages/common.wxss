@@ -1,0 +1,23 @@
+.header {
+  display: inline-flex;
+  flex-direction:row;
+  height: 96rpx;
+  width: 100%;
+  align-items: center;
+  justify-content:center;
+  background-color: rgb(0, 140, 238);
+}
+.headerButton {
+  width:64rpx;
+  height:64rpx;
+  position:absolute;
+}
+
+#back{
+  position:absolute;
+  left:25rpx;
+}
+
+.whiteText{
+  color:#ffffff;
+}

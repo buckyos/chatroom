@@ -1,0 +1,23 @@
+<!--pages/chatroom/adminroom.wxml-->
+<template name="userItem">
+    <view class="userItem">
+        <image src="{{avatarUrl}}" style="width:128rpx;height:128rpx"/>
+        <text id="nickName">{{nickName}}</text>
+    </view>
+</template>
+<view class="container">
+    <view class="header">
+        <text class="whiteText" id="back" bindtap="onBack">后退</text>
+        <text class="whiteText roomName">{{name}}</text>
+        <image id="showQRCode" src="../../pics/QRCode.png" bindtap="onClickQRCode" />
+    </view> 
+    <view class="UserView">
+        <template wx:for="{{userInfo}}" is="userItem" data="{{...item}}" />
+    </view>
+    <view class="EditAnnounceRow">
+        <text class="EditAnnounceText" bindtap="onTapAnnounce">群公告  ></text>
+    </view>
+    
+    <button wx:if="{{isAdmin}}" class="LeaveButton" type="warn" bindtap="OnDestoryRoom">解散房间</button>
+    <button wx:else type="warn" class="LeaveButton" bindtap="OnLeaveRoom">离开房间</button>
+</view>

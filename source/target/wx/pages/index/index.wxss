@@ -1,0 +1,60 @@
+/**index.wxss**/
+@import "../common.wxss";
+
+.userinfo-avatar {
+  width: 96rpx;
+  height: 96rpx;
+  position:absolute;
+  left:25rpx;
+}
+
+.userinfo-nickname {
+  height:60rpx;
+  left: 140rpx;
+  font-size:45rpx;
+  position:absolute;
+}
+
+.header {
+  display: inline-flex;
+  flex-direction:row;
+  height: 120rpx;
+  width: 100%;
+  margin-top:25rpx;
+  align-items: center;
+  justify-content:center;
+  background-color: #ffffff;
+}
+
+.RoomItemContainter {
+  margin-top: 10rpx;
+}
+
+.roomItem{
+  padding-left: 30rpx;
+  padding-right: 30rpx;
+  display:flex;
+  flex-direction:row;
+  background-color: #ffffff;
+  /*border-bottom: solid #6AC5AC 1rpx;*/
+  margin-top: 15rpx;
+  height:95rpx;
+  align-items: center;
+  justify-content:space-between;
+}
+/*
+.RoomItemContainter{
+  vertical-align: top;
+  height:100%;
+  justify-content: space-between;
+  display: inline-flex;
+  flex-direction:column;
+  margin-top:96rpx;
+  box-sizing:border-box;
+}
+*/
+.AdminLogo{
+  width:60rpx;
+  height:60rpx;
+  flex:none;
+}

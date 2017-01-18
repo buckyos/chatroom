@@ -1,0 +1,32 @@
+{
+	"global.events": {
+		"type": 1,
+		"map": {}
+	},
+	"global.runtimes": {
+		"type": 1,
+		"map": {}
+	},
+	"global.devices": {
+		"type": 1,
+		"map": {}
+	},
+	"global.storages": {
+		"type": 1,
+		"map": {}
+	},
+	"global.device_ops": {
+		"deviceID": {
+			"startup": [
+				"runtimeID1",
+				"runtimeID2"
+			]
+		}
+	},
+	"global.log": {
+		"type": 0,
+		"object": {
+			"host": "http://106.75.143.114:3002/logs/add"
+		}
+	}
+}

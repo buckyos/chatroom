@@ -1,0 +1,20 @@
+<!--pages/chatroom/setting.wxml-->
+<view class="container">
+    <view id="nickNameView">
+        <text class="leftElement" >昵称</text>
+        <input class="rightElement" value="{{userInfo.customName}}" bindinput="nameInput" id="nickNameInput" />
+    </view>
+
+    <view id="avatarRow">
+        <text class="leftElement" >头像</text>
+        <image src="{{userInfo.customImg}}" class="avatarImg" />
+    </view>
+    <view class="avaterView">
+        <text id="avatarViewText">选择头像</text>
+        <image wx:for="{{imgs}}" class="customImg" src="{{item}}" id="{{item}}" bindtap="onTapAvatar"/>
+    </view>
+    <view id="recoveryAvatarText">
+        <text bindtap="onRecoveryAvatar">恢复微信头像</text>
+    </view>
+    
+</view>

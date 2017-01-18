@@ -1,0 +1,62 @@
+@import "../common.wxss";
+.AdminContainer{
+    display:flex;
+    flex-direction: column;
+    justify-content:space-around;
+    height:100%;
+    align-items: center;
+    box-sizing:content-box;
+}
+.LeaveButton{
+    width:100%;
+    position:fixed;
+    bottom:40rpx;
+}
+.UserView{
+    width:100%;
+    display: flex;
+    flex-direction: row;
+    justify-content:flex-begin;
+    background-color: #ffffff;
+    margin-top:20rpx;
+}
+.userItem{
+    width: 128rpx;
+    height: 158rpx;
+    display: inline-flex;
+    flex-direction:column;
+    align-items: center;
+    justify-content:center;
+    margin-left:20rpx;
+}
+#nickName{
+    width:100%;
+    height: 30rpx;
+    font-size: 30rpx;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    overflow-x:hidden;
+}
+
+.EditAnnounceRow{
+    width:100%;
+    height:80rpx;
+    background-color: #ffffff;
+    display:flex;
+    align-items: center;
+    justify-content:flex-end;
+    border-bottom: solid 1px;
+    border-bottom-color: #DDDDDD;
+    margin-top:4rpx;
+    
+}
+.EditAnnounceText{
+    margin-right:20rpx;
+}
+
+#showQRCode{
+    position: absolute;
+    right:30rpx;
+    width:32px;
+    height:32px;
+}

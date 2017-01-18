@@ -1,0 +1,7 @@
+<!--pages/chatroom/enterroom.wxml-->
+<view>
+    <form bindsubmit="onSubmitEnterRoomForm">
+        <input name="roomid" type="digit" placeholder="房间号" />
+        <button formType="submit">进入房间</button>
+    </form>  
+</view>
