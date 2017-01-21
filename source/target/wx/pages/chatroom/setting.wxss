@@ -15,7 +15,30 @@
     align-items: center;
     font-size:18px;
 }
+.LeaveButton{
+    width:90%;
+}
 
+.flexconinter{
+    display:flex;
+    justify-content:center;
+    align-items: center;
+    position:fixed;
+    bottom:40rpx;
+    width:100%;
+}
+#avatertext{
+    display:flex;
+    justify-content:space-between;
+    align-items: center;
+    width:100%;
+}
+#avatarViewText2{
+    background-color: #ffffff;
+    padding-right:40rpx;
+    padding-top: 20rpx;
+    color:blue;
+}
 #avatarRow {
     font-size:18px;
     background-color: #ffffff;
@@ -25,9 +48,6 @@
     display: flex;
     justify-content:space-between;
     align-items: center;
-}
-
-#nickNameText{
 }
 
 .leftElement{
@@ -71,8 +91,7 @@
 
 #avatarViewText{
     background-color: #ffffff;
-    width:100%;
-    padding-left:30rpx;
+    padding-left:40rpx;
     padding-top: 20rpx;
 }
 

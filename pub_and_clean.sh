@@ -1,3 +1,3 @@
 #!/bin/sh
 
-node tools.js -pub -packages ./source/packages -app ./source/packages/app.json -knowledges ./source/packages/knowledges.json -uid "从网站获取的UID" -token "从网站获取的Token"
+node tools.js -pub -packages ./source/packages -app ./source/packages/app.json -knowledges ./source/packages/knowledges.json -uid "DEV@5@e303fcff-a303-44d5-87a7-c204483e4bb6@WJxbojagwO" -token "qPKqp8lN10MrYmCmMWFPgBot2KDPRfgDfiJs5wWjjdfGaMpf41kvvemgXRCYJLzpNcXHUJPcjJVEYdjhtxmbp7yC+yFP83HxCzUrR7dkRA4/0ot4Mei33SP/b/H8qPIyGUr0nscgN9LqGHTEqTzzH+Zp6//RoQT3N4JTCP9xdJgFQxp4nGu+ox0EmsUDvhqjQYKINTBt4DHnwRyvO9XO5/sn+kzGPdKnB0AElvZwFIfXAU2W1xDzAGCZJRJ4YPVQA+Hy4k0ACbylTcCWfvGqn9I5sEJloAliIRy+8xzY1L83p0CN5XPH49nDOV6d4LPsEOA+/vv3lTqCSjgjovV+Wg==,60fd28a8-c345-4d6f-b8ac-1dff566944ec,1485001764,1485260964,0"

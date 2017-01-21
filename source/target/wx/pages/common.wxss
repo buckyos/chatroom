@@ -3,9 +3,10 @@
   flex-direction:row;
   height: 96rpx;
   width: 100%;
+  font-size: 18px;
   align-items: center;
   justify-content:center;
-  background-color: rgb(0, 140, 238);
+  background-color: #1AAD19;
 }
 .headerButton {
   width:64rpx;

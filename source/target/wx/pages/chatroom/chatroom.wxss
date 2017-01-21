@@ -17,20 +17,31 @@
   float:right;
   position:absolute;
   border-radius:4px;
-  bottom: 16rpx;
+  bottom: 20rpx;
   right:20rpx;
 }
-.roomName {
+/*.roomName {
   height:60rpx;
-  font-size:50rpx;
+  font-size:20px;
+}*/
+.tri-left{
+  width:0; 
+  height:0; 
+  border-top:7px solid transparent;
+  border-bottom:7px solid transparent; 
+  border-right:7px solid green; 
+  position: absolute;
+  margin-right:18rpx;
 }
 #messageinput{
   display:inline-block;
   float:left;
   width:85%;
+  left:3rpx;
   min-height:60rpx;
   border-bottom: solid 1px;
   border-bottom-color: #DDDDDD;
+  padding-top: 6rpx;
 }
 
 .HistoryView{

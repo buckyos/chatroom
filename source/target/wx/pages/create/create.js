@@ -39,9 +39,12 @@ Page({
       }
       chatroom.createRoom(openid, name, 0, gps, function (roominfo) {
         console.log("create room callback", roominfo);
-        wx.redirectTo({
-          url: `../chatroom/chatroom?id=${roominfo.id}`
-        });
+        if (roominfo){
+          wx.redirectTo({url: `../chatroom/chatroom?id=${roominfo.id}`});
+        } else {
+          wx.showToast({ title: '创建房间失败!!' })
+        }
+        
       });
     })
   },

@@ -25,28 +25,13 @@ Page({
     lastUpdateTime:0,
     lastviewid:""
   },
-  onLoad: function (query) {
-    this.setData({
-      id: query.id,
-      isAdmin: query.admin,
-    });
-
-    let thisRuntime = core.getCurrentRuntime()
-    let em = thisRuntime.getGlobalEventManager()
-    let eventName = 'room_event_' + query.id
-    console.log('attach event', eventName)
-    em.attach(eventName, function(msg) {
-      console.log('on room_event', msg)
-    }, function(result, unknown) {
-      console.log('attach event callback ', result, unknown)
-    })
-
-    let that = this;
-    buckyhelper.getRoomInfo(query.id, function(roominfo){
+  updateBBS(){
+    let that = this
+    buckyhelper.getRoomInfo(that.data.id, function(roominfo){
       if (roominfo) {
           console.log("get roominfo ", roominfo)
           if(roominfo.bbs){
-              let lastUpdateTime = buckyhelper.getCustomRoominfo(query.id, "lastUpdateTime") | 0
+              let lastUpdateTime = buckyhelper.getCustomRoominfo(that.data.id, "lastUpdateTime") | 0
               if(lastUpdateTime < roominfo.bbsTime){
                 that.data.showAnnounce = true
               }
@@ -54,7 +39,7 @@ Page({
               that.setData({
                 announce: roominfo.bbs,
                 showAnnounce: that.data.showAnnounce,
-                ViewHeight:that.ViewHeight-60,
+                ViewHeight:that.data.ViewHeight-60,
                 lastUpdateTime:roominfo.bbsTime,
                 lastviewid:that.data.lastviewid
               });
@@ -64,24 +49,43 @@ Page({
             roomInfo: roominfo
           });
         } else {
-          console.error('could not get room info, by id', query.id);
+          console.error('could not get room info, by id', that.data.id);
         }
-    })
-
-    buckyhelper.setRoomCountUpdate(query.id, function(count){
-      //only fetch when historyStartIndex > 0
-      if(that.data.historyStartIndex > 0){
-        that.FetchMessage(that.data.historyStartIndex, 0)
-      }
-      
-    })
-
+    }, true)
+  },
+  onLoad: function (query) {
+    this.setData({
+      id: query.id,
+      isAdmin: query.admin,
+    });
+    let that = this;
+    //读取历史数据
     let datas = buckyhelper.readHistoryFromCache(that.data.id)
     that.setData({
       history: datas[0],
       historyStartIndex: datas[1],
       historyEndIndex: datas[2]
     })
+    //设置推送
+    let thisRuntime = core.getCurrentRuntime()
+    let em = thisRuntime.getGlobalEventManager()
+    let eventName = 'room_event_' + query.id
+    console.log('attach event', eventName)
+    em.attach(eventName, function(msg) {
+      console.log('on room_event', msg)
+      let msgObj = JSON.parse(msg)
+      if(msgObj.eventType == "count"){
+        that.FetchMessage(that.data.historyEndIndex, 0)
+      } else if(msgObj.eventType == "bbs"){
+        that.updateBBS()
+      }
+    }, function(result, unknown) {
+      console.log('attach event callback ', result, unknown)
+    })
+    //主动更新一次公告
+    that.updateBBS()
+
+    
   },
   onShow: function(){
     //auto fetch last 10 messages or all newest messages

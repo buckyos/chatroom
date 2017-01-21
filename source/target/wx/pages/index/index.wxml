@@ -2,7 +2,7 @@
 <template name="roomItem">
   <view class="roomItem" data-id="{{id}}" data-admin="{{roomAdmin}}" data-name="{{name}}" catchtap="OnEnterRoomTap">
     <text style="margin-left:5px">{{name}}</text>
-    <image id="adminBtn" wx:if="{{roomAdmin}}" src="../../pics/userinfo.png" class="AdminLogo" bindtap="OnEnterAdminRoom"/>
+    <image id="adminBtn" wx:if="{{roomAdmin}}" src="../../pics/userinfo_.png" class="AdminLogo" bindtap="OnEnterAdminRoom"/>
   </view>
 </template>
 

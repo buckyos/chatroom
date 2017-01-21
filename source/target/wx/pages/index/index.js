@@ -5,99 +5,11 @@ buckyhelper.Init()
 var app = getApp()
 Page({
   data: {
-    motto: 'Hello Bucky',
     userInfo: {},
     createRooms: [],
     enterRooms: [],
     isLogin:false,
-    appConfig: {
-      'appid': 'wMvbmOeYAl',
-      //'appid': 'bx.demos',
-      'appHost': 'https://weixin.xmaose.com/apphost/',
-      'repositoryHost': 'https://dev.tinyappcloud.com/services/repository71',
-      'knowledgeHost': 'https://dev.tinyappcloud.com/services/knowledge/get_value',
-      'appver': '1.0.0.1',
-      'token': 'abcdef0123'
-    },
-    packages: {
-      'path': 'packages',
-      'chatroom_proxy': {
-        'packageID': 'chatroom_proxy',
-        'version': '1.0.0.0',
-        'build': 1,
-        'deviceType': '*',
-        'meta': {
-          'desc': 'chat room'
-        },
-        'depends': [],
-        'modules': {
-          'chatroom': 'chatroom.js',
-          'history': 'history.js',
-          'chatuser': 'chatuser.js'
-        },
-        'drivers': [],
-        'knowledges': [{ 'key': 'global.events', 'type': 1 },
-        { 'key': 'global.runtimes', 'type': 1 },
-        { 'key': 'global.devices', 'type': 1 },
-        { 'key': 'global.storages', 'type': 1 },
-        { 'key': 'global.loadrules', 'type': 0 }],
-      },
-      'chatuser_proxy': {
-
-        "packageID": "chatuser_proxy",
-        "version": "1.0.0.0",
-        "build": 1,
-        "deviceType": "*",
-        "meta": {
-          "desc": "chat user"
-        },
-        "depends": [],
-        "modules": {
-          "chatuser": "chatuser.js"
-        },
-        "drivers": [],
-        "knowledges22": [
-          "global.events",
-          "global.runtimes",
-          "global.devices",
-          "global.storages",
-          "global.loadrules",
-          "global.log"
-        ],
-        'knowledges': [{ 'key': 'global.events', 'type': 1 },
-        { 'key': 'global.runtimes', 'type': 1 },
-        { 'key': 'global.devices', 'type': 1 },
-        { 'key': 'global.storages', 'type': 1 },
-        { 'key': 'global.loadrules', 'type': 0 }],
-      },
-      'history_proxy': {
-        "packageID": "history_proxy",
-        "version": "1.0.0.0",
-        "build": 1,
-        "deviceType": "*",
-        "meta": {
-          "desc": "chat chathisory"
-        },
-        "depends": [],
-        "modules": {
-          "history": "history.js"
-        },
-        "drivers": [],
-        "knowledges22": [
-          "global.events",
-          "global.runtimes",
-          "global.devices",
-          "global.storages",
-          "global.loadrules",
-          "global.log"
-        ],
-       'knowledges': [{ 'key': 'global.events', 'type': 1 },
-        { 'key': 'global.runtimes', 'type': 1 },
-        { 'key': 'global.devices', 'type': 1 },
-        { 'key': 'global.storages', 'type': 1 },
-        { 'key': 'global.loadrules', 'type': 0 }],
-      },
-      ViewHeight: 0
+    ViewHeight: 0
     }
   },
   // 事件处理函数
@@ -179,11 +91,12 @@ Page({
   ScanRoomID: function () {
     wx.scanCode({
       success: function (res) {
+        
         let roomid = parseInt(res.result)
-        if (roomid == NaN) {
+        if (!res.path) {
           wx.showToast({ title: '二维码格式错误' })
         } else {
-          buckyhelper.enterChatRoom(roomid)
+          wx.redirectTo({url: res.path})
         }
       }
     })
@@ -242,9 +155,12 @@ Page({
     buckyhelper.fireRoomCountUpdate(roomid, count)
   },
 
-  onLoad: function () {
+  onLoad: function (option) {
     console.log('onLoad')
     var that = this
+    if(option.roomid){
+      that.setData({roomid:option.roomid})
+    }
 
     let res = wx.getSystemInfoSync()
     buckyhelper.SetSystemInfo(res.windowHeight, res.windowWidth)
@@ -257,18 +173,29 @@ Page({
         success: function(res){
           // success
           buckyhelper.setSelfUserInfo(res.userInfo)
+        },
+        fail: function() {
+          // fail
+          let userInfo = {}
+          userInfo["nickName"] = "默认用户名"
+          userInfo["avatarUrl"] = "../../pics/avatar1.jpg"
+          userInfo["gender"] = "famale"
+          buckyhelper.setSelfUserInfo(userInfo)
+        },
+        complete:function(){
+          let userInfo = buckyhelper.getSelfUserInfo()
           buckyhelper.getChatUserModule(function(chatuser){
-            chatuser.createUser(openid, res.userInfo.nickName, res.userInfo.avatarUrl, res.userInfo.gender, function (userinfo) {
+            chatuser.createUser(openid, userInfo.nickName, userInfo.avatarUrl, userInfo.gender, function (userinfo) {
               console.log('create user callback ', userinfo)
               wx.hideToast()
-              that.setData({ userInfo: buckyhelper.getSelfUserInfo(), isLogin:true })
+              that.setData({ userInfo: userInfo, isLogin:true })
               that.onRefreshCreateRoomList()
               that.onRefreshEnterRoomList()
             })
           })
-        },
-        fail: function() {
-          // fail
+          if(that.data.roomid){
+            buckyhelper.enterChatRoom(that.data.roomid)
+          }
         }
       })
     }

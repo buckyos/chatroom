@@ -1,0 +1,26 @@
+#create {
+    padding: 20px 20px 20px 20px;
+}
+
+#roomName {
+    border-bottom: solid 1px;
+    border-bottom-color: #E8E3C7;
+}
+
+#location {
+    margin-top:20px;
+}
+
+#limit {
+    margin-top:20px;
+}
+
+#limitSwitch {
+    margin-left:20px;
+}
+
+button {
+    margin-top: 20px;
+    color:#FFFFFF;
+    background-color:#49B64E;
+}

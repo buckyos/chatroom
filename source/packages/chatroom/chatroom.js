@@ -29,25 +29,6 @@ function getNextRoomID (rs, cb) {
 let createRoomIDList = 'createRoomIDList'
 let enterRoomIDList = 'enterRoomIDList'
 
-function addEnterRoomLink (rs, roomid, userid, cb) {
-  let userEnterRooms = enterRoomIDList + '_' + userid
-  rs.getObject(userEnterRooms, function (objid, roomlist) {
-    if (roomlist) {
-      if (roomlist.indexOf(roomid) == -1) {
-        roomlist.push(roomid)
-      }
-      rs.setObject(userEnterRooms, roomlist, function (objid, result) {
-        cb(result)
-      })
-    } else {
-      roomlist = [roomid]
-      rs.setObject(userEnterRooms, roomlist, function (objid, result) {
-        cb(result)
-      })
-    }
-  })
-}
-
 function addCreateRoomLink (rs, userid, roomid, cb) {
   let thisRuntime = getCurrentRuntime()
   let logger = thisRuntime.getLogger()
@@ -69,7 +50,7 @@ function addCreateRoomLink (rs, userid, roomid, cb) {
   })
 }
 
-function createRoomEvent(id) {
+function createRoomEvent(id, cb) {
    let thisRuntime = getCurrentRuntime()
    let logger = thisRuntime.getLogger()
    let em = thisRuntime.getGlobalEventManager();
@@ -93,6 +74,7 @@ function createRoomEvent(id) {
     let eventName = 'room_event_' + id;
     em.createEvent(eventName, function() {
       logger.info('create event', eventName)
+      cb()
     })
 }
 
@@ -120,10 +102,7 @@ function createRoom (userid, roomname, expiretime, gps, cb) {
     logger.info('set object', id, newRoom)
     rs.setObject(id, newRoom, function (objid, result) {
       addCreateRoomLink(rs, userid, id, function () {
-        addEnterRoomLink(rs, id, userid, function () {
-
-          createRoomEvent(id)
-
+        createRoomEvent(id, function(){
           cb(result ? newRoom : null)
         })
       })
@@ -229,8 +208,10 @@ function destroyChatRoom (userid, roomid, cb) {
       removeEnterRooms(rs, userid, roomid, function (result) {
         if (result) {
           rs.removeObject(roomid, function (objid, ret) {
+            let em = thisRuntime.getGlobalEventManager();
+            let eventName = 'room_event_' + roomid;
+            em.removeEvent(eventName, function(){})
             cb(ret)
-
             // let em = thisRuntime.getGlobalEventManager()
             // em.fireEvent('destroy_' + id, roomid)
           })
@@ -352,6 +333,25 @@ function getHistoryModule(cb) {
     getChatRoomModuleByName('history', cb);
 }
 
+function addEnterRoomLink (rs, roomid, userid, cb) {
+  let userEnterRooms = enterRoomIDList + '_' + userid
+  rs.getObject(userEnterRooms, function (objid, roomlist) {
+    if (roomlist) {
+      if (roomlist.indexOf(roomid) == -1) {
+        roomlist.push(roomid)
+      }
+      rs.setObject(userEnterRooms, roomlist, function (objid, result) {
+        cb(result)
+      })
+    } else {
+      roomlist = [roomid]
+      rs.setObject(userEnterRooms, roomlist, function (objid, result) {
+        cb(result)
+      })
+    }
+  })
+}
+
 // return
 // 0 成功
 // 1 需要gps
@@ -397,9 +397,6 @@ function enterChatRoom (roomid, userid, gps, cb) {
       } else {
         roominfo.users.push(userid)
         rs.setObject(roomid, roominfo, function (objid, result) {
-          
-          cb(0)
-
           getHistoryModule(function(history) {
             getChatUserModule(function (chatuser) {
               chatuser.getUserInfo(userid, function(userinfo) {
@@ -412,18 +409,9 @@ function enterChatRoom (roomid, userid, gps, cb) {
           })
         })
       }
-
-      let userEnterRooms = enterRoomIDList + '_' + userid
-      rs.getObject(userEnterRooms, function (objid, roomlist) {
-        if (roomlist) {
-          if (roomlist.indexOf(roomid) == -1) {
-            roomlist.push(roomid)
-          }
-          rs.setObject(userEnterRooms, roomlist, function () {})
-        } else {
-          roomlist = [roomid]
-          rs.setObject(userEnterRooms, roomlist, function () {})
-        }
+      
+      addEnterRoomLink(rs, roomid, userid, function(){
+          cb(0)
       })
     } else {
       cb(3)
@@ -575,17 +563,17 @@ function getHistoryListInfo (roomid, start, end, cb) {
   })
 }
 
+/*由于此处涉及私有appid,secret,对外发布的代码GetQRCode功能将不能直接使用，需填入自己小程序的appid和secret*/
+
 function getToken (cb) {
   let thisRuntime = getCurrentRuntime()
   let logger = thisRuntime.getLogger()
   logger.info('!!!!start getToken.')
 
-  let appid = 'wxcacb9d625cb8aa80'
-  let secret = '89742675a694e64240fbf15fbded6ae8'
+  let appid = ''
+  let secret = ''
   let tokenUrl = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appid}&secret=${secret}`
 
-  // { access_token: 'szi1mT2WrqfsPvERQ9FXOBjpDWtLigEOPUbwlqFrN1249UDimEpltMe3-2cYmxGnWx-EBq8nV3lBZ28sk5LAtzThZCeHbilQaN53DaTOeFkENdzeJSZTcinuTVSNDdd5RBIeAJAVFM',
-  // expires_in: 7200 }
   request(tokenUrl, function (err, res, body) {
     cb(err, err === null ? JSON.parse(body) : null)
   })
@@ -594,8 +582,6 @@ function getToken (cb) {
 // getToken(function(err, body) {
 //     console.log(body)
 // })
-
-let tokenExpire = 'thG3J2ayrR12K_AuP-r1gikmVs0V9u3PAceC1nQGF2EhYVwllHDHwQs9Dwr4fpJLLhy98IzkH9WvPQhoVJESiXUP72-pdiHCWl9FwcWQ8W8YAOdAFAJLZ'
 
 function getQRFromServer (token, path, width, cb) {
   let thisRuntime = getCurrentRuntime()
@@ -662,8 +648,8 @@ function upload (buffer, cb) {
       }
     }
   }
-  request.post({url: ' http://106.75.143.114:3000/logs/add', formData: formData}, function (err, res, body) {
-    // {"url":"http://www.tinyappcloud.com/chat/upload_d99dfa7b0579b854c7e31f663edaad29.jpg"}
+  /*微信小程序不支持通过post直接下载图片并显示，这里使用了私有的上传服务器，上传图片文件之后返回http地址*/
+  request.post({url: 'private upload server', formData: formData}, function (err, res, body) {
     cb(err === null, JSON.parse(body))
   })
 }
@@ -747,7 +733,7 @@ function appendHistory (roomid, historyid, cb) {
     if (roominfo) {
       roominfo.history.push(historyid)
       rs.setObject(roomid, roominfo, function (id, ret) {
-          //临时写一个事件触发，只通知用户有消息更新了
+          //临时写一个事件触发，只通知用户有消息更新了,触发客户端主动拉取
           let em = thisRuntime.getGlobalEventManager()
           let eventName = 'room_event_' + roomid
           em.fireEvent(eventName, JSON.stringify({eventType: 'count'}));

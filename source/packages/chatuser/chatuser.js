@@ -8,9 +8,11 @@ let md5 = function (str) {
   md5sum.update(str)
   return md5sum.digest(`hex`)
 }
-
+/* 由于url包含敏感信息，将appid和secret部分去掉，需填入自己小程序的appid和secret*/
 function getOpenID (authCode, cb) {
-  let url = `https://api.weixin.qq.com/sns/jscode2session?appid=wxcacb9d625cb8aa80&secret=89742675a694e64240fbf15fbded6ae8&js_code=${authCode}&grant_type=authorization_code`
+  let appid = ''
+  let secret = ''
+  let url = `https://api.weixin.qq.com/sns/jscode2session?appid=${appid}&secret=${secret}&js_code=${authCode}&grant_type=authorization_code`
 
   request(url, function (err, resp, body) {
     console.log(body)
@@ -18,6 +20,7 @@ function getOpenID (authCode, cb) {
     cb(err, err === null ? sessionInfo.openid : null)
   })
 }
+
 
 //登录step1: 用authorcode创建一个我们自己的userid，用于后续操作。
 //暂时没有存储openid和userid的对应关系，以后应该加上，用于其他接口的校验

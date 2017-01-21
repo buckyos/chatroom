@@ -12,7 +12,7 @@
 
 <view class="container">
   <view class="header">
-    <text class="whiteText" id="back" bindtap="onBack">后退</text>
+    <text class="whiteText" id="back" bindtap="onBack">返回</text>
     <text class="whiteText roomName">{{roomInfo.name}}</text>
     <image class="headerButton" src="../../pics/refresh_normal.png" style="right:110rpx" bindtap="onFetchMessage" />
     <image class="headerButton" src="../../pics/userinfo.png" style="right:15rpx;" bindtap="OnEnterAdminRoom"/>

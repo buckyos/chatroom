@@ -62,11 +62,13 @@ function addHistory (roomid, from, to, content, type, cb) {
                         cb(ret)
                     })
                 } else {
+                    logger.error("setStorage Failed")
                     cb(false)
                 }
                 })
             })
           } else {
+              logger.error("no roominfo")
               cb(false)
           }
       })
@@ -87,7 +89,7 @@ function loadPackageModule(packageName, modName, cb) {
 function getHistory (historyid, cb) {
   let thisRuntime = getCurrentRuntime()
   let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getHistory.')
+  logger.info('start getHistory. ', historyid)
   // console.log(arguments)
   let rs = thisRuntime.getRuntimeStorage('/chathistory/')
 

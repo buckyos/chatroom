@@ -10,11 +10,10 @@
         <image src="{{userInfo.customImg}}" class="avatarImg" />
     </view>
     <view class="avaterView">
-        <text id="avatarViewText">选择头像</text>
+        <view id="avatertext">
+            <text id="avatarViewText">选择头像</text>
+            <text id="avatarViewText2" bindtap="onRecoveryAvatar">恢复微信头像</text>
+        </view>
         <image wx:for="{{imgs}}" class="customImg" src="{{item}}" id="{{item}}" bindtap="onTapAvatar"/>
     </view>
-    <view id="recoveryAvatarText">
-        <text bindtap="onRecoveryAvatar">恢复微信头像</text>
-    </view>
-    
 </view>
