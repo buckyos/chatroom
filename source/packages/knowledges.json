@@ -11,6 +11,10 @@
 		"type": 1,
 		"map": {}
 	},
+	"global.buses": {
+		"type": 1,
+		"map": {}
+	},
     "global.loadrules": {
 		"type": 0,
 		"object": {
