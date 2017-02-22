@@ -22,13 +22,6 @@ Page({
     let name = e.detail.value.name;
     //let expire = e.detail.value.expire;
     let that = this
-    //console.log(name, expire);
-    /*
-    if (!name || !expire) {
-      console.error("you need set name and expire");
-      return;
-    }
-    */
     buckyhelper.getChatRoomModule(function(chatroom){
       let openid = buckyhelper.getOpenID()
       console.log("create room", { openid: openid, name: name});
@@ -39,6 +32,7 @@ Page({
       }
       chatroom.createRoom(openid, name, 0, gps, function (roominfo) {
         console.log("create room callback", roominfo);
+        wx.hideToast()
         if (roominfo){
           wx.redirectTo({url: `../chatroom/chatroom?id=${roominfo.id}`});
         } else {
@@ -46,6 +40,12 @@ Page({
         }
         
       });
+      wx.showToast({
+        title: '创建中',
+        icon: 'loading',
+        duration: 10000,
+        mask: true,
+      })
     })
   },
 

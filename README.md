@@ -20,11 +20,12 @@ Live会聊(开源微信小程序）
 2. 修改source/packages/app.json, 填入获取的appid
 3. 修改pub_and_clean.sh和pub_not_clean.sh, 填入获取的uid和token
 4. 运行install_npm_deps.sh, 安装 node 必要组件
-5. 运行update_latest_sdk.sh
-   手动更新bucky_sdk: 从github下载bucky_sdk，将proxytools.js, tools.js, node_core.js拷贝到根目录，将wx_core.js拷贝到source/target/wx/bucky/目录，没有这个目录需手动创建
+5. 运行update_latest_sdk.sh, 自动更新最新版本的bucky sdk
+   或： 手动更新bucky_sdk: 从github下载bucky_sdk，将proxytools.js, tools.js, node_core.js拷贝到根目录，将wx_core.js拷贝到source/target/wx/bucky/目录，没有这个目录需手动创建
 6. 运行build_proxy.sh, 生成供服务器和wx使用的proxy
 7. 运行修改后的pub_and_clean.sh, 第一次发布工程
    运行pub_not_clean.sh 更新已发布的代码，不影响数据
+   注意： clean时需要app.json中应用ID， 脚本中应用UID和Token三个值都必须一致，否则update knowledge会失败
 8. 新建小程序，填入自己的小程序appid，目录指向./source/target/wx
 9. 打开./source/target/wx_config.json,将其中内容拷贝到微信小程序的index.js的data段，覆盖原来的appConfig和packages段
    index.js位置： source/target/wx/pages/index/index.js

@@ -232,11 +232,12 @@ Page({
         console.log('add history', that.data.roomInfo.id, openid, content);
         history.addHistory(that.data.roomInfo.id, openid, '', content, 1, function (result) {
           console.log('add history result', result);
-
-          that.onFetchMessage();
+          if(result){
+            that.setData({inputValue:""});
+            that.onFetchMessage();
+          }
         });
     });
-    that.setData({inputValue:""});
   },
 
   getHistoryInfoByHistoryList: function (history, historyList, cb) {

@@ -48,6 +48,4 @@ AddConfigFromPackage("chatroom_proxy", curDir+"/source/target/wx/bucky/packages"
 AddConfigFromPackage("chatuser_proxy", curDir+"/source/target/wx/bucky/packages")
 AddConfigFromPackage("history_proxy", curDir+"/source/target/wx/bucky/packages")
 
-content += "\r\n}";
-
 fs.writeFileSync(curDir+"/source/target/wx_config.json", content);
