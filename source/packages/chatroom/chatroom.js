@@ -247,8 +247,8 @@ function getBBS (roomid, cb) {
 
   rs.getObject(roomid, function (objid, roominfo) {
     cb({
-      bbs: roominfo.bbs,
-      time: roominfo.bbsTime
+      bbs: roominfo ? roominfo.bbs : null,
+      time: roominfo ? roominfo.bbsTime : null,
     })
   })
 }
