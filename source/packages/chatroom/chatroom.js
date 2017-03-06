@@ -702,9 +702,9 @@ function getQRCode (path, width, cb) {
   logger.info('!!!!start getQRCode.', path, width)
 
   getCacheToken(function (token) {
-    logger.info('get token', token)
-    getQR(tokenExpire, path, width, function (result, body) {
-      logger.info('get qr', result)
+    BX_INFO('get token', token)
+    getQR(token, path, width, function (result, body) {
+      BX_INFO('get qr', result)
       if (result) {
         upload(body, function (result, body) {
           logger.info('upload', result, body)
