@@ -31,7 +31,7 @@ Page({
       })
 
       buckyhelper.getChatRoomModule(function(chatroom){
-        chatroom.getBBS(options.id, function(announce){
+        chatroom.getBBS(buckyhelper.getSessionID(), options.id, function(announce){
           if(announce){
             that.setData({
               announce:announce.bbs
@@ -80,18 +80,16 @@ Page({
   },
   OnDestoryRoom:function(event){
     let that = this;
-    let openid = buckyhelper.getOpenID();
     buckyhelper.getChatRoomModule(function (chatroom) {
-      chatroom.destroyChatRoom(openid, that.data.id, function (ret) {
+      chatroom.destroyChatRoom(buckyhelper.getSessionID(), that.data.id, function (ret) {
         wx.navigateBack({delta:5});
       })
     });
   },
   OnLeaveRoom:function(event){
     let that = this;
-    let openid = buckyhelper.getOpenID();
     buckyhelper.getChatRoomModule(function (chatroom) {
-      chatroom.leaveChatRoom(that.data.id, openid, function (ret) {
+      chatroom.leaveChatRoom(buckyhelper.getSessionID(), openid, function (ret) {
         wx.navigateBack({delta:5});
       })
     });

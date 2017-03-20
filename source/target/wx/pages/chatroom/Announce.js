@@ -23,7 +23,7 @@ Page({
     })
     // 页面初始化 options为页面跳转所带来的参数
     buckyhelper.getChatRoomModule(function(chatroom){
-      chatroom.getBBS(options.id, function(announce){
+      chatroom.getBBS(buckyhelper.getSessionID(), options.id, function(announce){
         if(announce){
           that.setData({
             announce:announce.bbs
@@ -60,7 +60,7 @@ Page({
         editStatus: "编辑"
       })
       buckyhelper.getChatRoomModule(function(chatroom){
-        chatroom.setBBS(buckyhelper.getOpenID(), that.data.id, that.data.announce, function(result){
+        chatroom.setBBS(buckyhelper.getSessionID(), that.data.id, that.data.announce, function(result){
           if(result){
             wx.showToast({"title":"公告保存成功"})
           } else {

@@ -4,6 +4,51 @@ let assert = require('assert')
 let request = require('request')
 // let history = require('history')
 
+function tagLog() {
+    return 'chatroom__server';
+}
+
+
+// 带缓存的模块加载器
+function getPackageLoader() {
+    let packageCache = [];
+    return function(packageName, moduleName, cb) {
+        // BX_INFO(`packageLoader ${packageName} ${moduleName}`, tagLog);
+
+        if (packageCache[packageName]) {
+            // BX_INFO(`packageLoader ${packageName} hit cache`, tagLog);
+            if (packageCache[packageName][moduleName]) {
+                // BX_INFO(`packageLoader ${moduleName} hit cache`, tagLog);
+                cb(packageCache[packageName][moduleName]);
+            } else {
+                // BX_INFO(`packageLoader load module ${moduleName}`, tagLog);
+                packageCache[packageName].loadModule(moduleName, function(mod) {
+                    // BX_INFO(`packageLoader load module success ${mod}`, tagLog);
+                    packageCache[packageName][moduleName] = mod;
+                    cb(mod);
+                });
+            }
+        } else {
+            let thisRuntime = getCurrentRuntime();
+            // BX_INFO(`packageLoader load xar package ${packageName}`, tagLog);
+
+            thisRuntime.loadXARPackage(packageName, function(pkg) {
+                // BX_INFO(`packageLoader load xar package ok ${packageName}`, tagLog);
+                packageCache[packageName] = pkg;
+
+                // BX_INFO(`packageLoader load module ${moduleName}`, tagLog);
+                pkg.loadModule(moduleName, function(mod) {
+                    // BX_INFO(`packageLoader load moudle ok ` + mod, tagLog);
+                    packageCache[packageName][moduleName] = mod;
+                    cb(mod);
+                });
+            });
+        }
+    }
+}
+
+const packageLoader = getPackageLoader();
+
 // 聊天室
 
 // GPS 名词
@@ -11,345 +56,408 @@ let request = require('request')
 // longitude 经度
 // accuracy 精确度
 
-function getNextRoomID (rs, cb) {
-  let nextroomid = 'nextroom__id'
-  rs.getObject(nextroomid, function (objid, obj) {
-    if (obj) {
-      rs.setObject(nextroomid, {id: obj.id + 1}, function (objid, result) {
-        cb(obj.id + 1)
-      })
-    } else {
-      rs.setObject(nextroomid, {id: 12122}, function (objid, result) {
-        cb(12122)
-      })
-    }
-  })
+function getNextRoomID(rs, cb) {
+    let nextroomid = 'nextroom__id'
+    rs.getObject(nextroomid, function(objid, obj) {
+        if (obj) {
+            rs.setObject(nextroomid, { id: obj.id + 1 }, function(objid, result) {
+                cb(obj.id + 1)
+            })
+        } else {
+            rs.setObject(nextroomid, { id: 12122 }, function(objid, result) {
+                cb(12122)
+            })
+        }
+    })
 }
 
 let createRoomIDList = 'createRoomIDList'
 let enterRoomIDList = 'enterRoomIDList'
 
-function addCreateRoomLink (rs, userid, roomid, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  let userCreateRooms = createRoomIDList + '_' + userid
-  rs.getObject(userCreateRooms, function (objid, roomlist) {
-    if (roomlist) {
-      roomlist.push(roomid)
-      rs.setObject(userCreateRooms, roomlist, function (objid, result) {
-        logger.info('set user create room list 1', roomlist, result)
-        cb(result)
-      })
-    } else {
-      roomlist = [roomid]
-      rs.setObject(userCreateRooms, roomlist, function (objid, result) {
-        logger.info('set user create room list 2', roomlist, result)
-        cb(result)
-      })
-    }
-  })
+function addCreateRoomLink(rs, userid, roomid, cb) {
+    let thisRuntime = getCurrentRuntime()
+    let userCreateRooms = createRoomIDList + '_' + userid
+    rs.getObject(userCreateRooms, function(objid, roomlist) {
+        if (roomlist) {
+            roomlist.push(roomid)
+            rs.setObject(userCreateRooms, roomlist, function(objid, result) {
+                BX_INFO('set user create room list 1', roomlist, result, tagLog);
+                cb(result)
+            })
+        } else {
+            roomlist = [roomid]
+            rs.setObject(userCreateRooms, roomlist, function(objid, result) {
+                BX_INFO('set user create room list 2', roomlist, result, tagLog);
+                cb(result)
+            })
+        }
+    })
 }
 
 function createRoomEvent(id, cb) {
-   let thisRuntime = getCurrentRuntime()
-   let logger = thisRuntime.getLogger()
-   let em = thisRuntime.getGlobalEventManager();
-    // em.createEvent("message_" + id, function() {
-
-    // })
-
-    
-    // em.createEvent('bbs_' + id, function() {
-
-    // })
-
-    // em.createEvent('user_' + id, function () {
-
-    // })
-
-    // em.createEvent('destroy_' + id, function() {
-
-    // })
+    let thisRuntime = getCurrentRuntime()
+    let em = thisRuntime.getGlobalEventManager();
 
     let eventName = 'room_event_' + id;
-    em.createEvent(eventName, function() {
-      logger.info('create event', eventName)
-      cb()
+    em.createEvent(eventName, function(result) {
+        BX_INFO('create event', eventName, result);
+        cb(result);
     })
 }
 
 // gps = null or {latitude: 0.0, longitude: 1.1, accuracy: 10}
-function createRoom (userid, roomname, expiretime, gps, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start create room.')
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+function createRoom(sessionID, roomname, expiretime, gps, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start create room.', tagLog);
 
-  getNextRoomID(rs, function (id) {
-    let newRoom = {
-      id: id,
-      admin: userid,
-      expire: expiretime,
-      name: roomname,
-      users: [userid],
-      history: [],
-      gps: gps,
-      enableGPS: gps === null,
-      time: new Date().getTime()
-    }
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
 
-    logger.info('set object', id, newRoom)
-    rs.setObject(id, newRoom, function (objid, result) {
-      addCreateRoomLink(rs, userid, id, function () {
-        createRoomEvent(id, function(){
-          cb(result ? newRoom : null)
-        })
-      })
-    })
-  })
+                getNextRoomID(rs, function(id) {
+                    let newRoom = {
+                        id: id,
+                        admin: userid,
+                        expire: expiretime,
+                        name: roomname,
+                        users: [userid],
+                        history: [],
+                        gps: gps,
+                        enableGPS: gps === null,
+                        time: new Date().getTime()
+                    }
+
+                    BX_INFO('set object', id, newRoom, tagLog);
+                    rs.setObject(id, newRoom, function(objid, result) {
+                        addCreateRoomLink(rs, userid, id, function() {
+                            createRoomEvent(id, function(result) {
+                                if (result === ErrorCode.RESULT_OK) {
+                                    BX_INFO('create room response ok', newRoom, tagLog);
+                                    cb({ err: null, ret: newRoom });
+                                } else {
+                                    BX_ERROR('create room event failed, result', result, tagLog);
+                                    cb({ err: `create room event failed` });
+                                }
+                            });
+                        });
+                    });
+                });
+            }
+        });
+    });
+
+
 }
 
 // 显示已创建的房间
-function listChatRoom (userid, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start list room.')
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+function listChatRoom(sessionID, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start list room.', tagLog);
 
-  let userCreateRooms = createRoomIDList + '_' + userid
-  logger.info('userCreateRooms', userCreateRooms)
-  rs.getObject(userCreateRooms, function (objid, roomlist) {
-    logger.info('roomlist', roomlist)
-    cb(roomlist ? roomlist : [])
-  })
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        BX_INFO(`chatuser module ${chatuser}`, chatuser, tagLog);
+
+        BX_INFO(`getUserIDBySessionID type is ${typeof chatuser.getUserIDBySessionID}`, tagLog);
+
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+
+                let userCreateRooms = createRoomIDList + '_' + userid
+                BX_INFO('userCreateRooms', userCreateRooms, tagLog);
+                rs.getObject(userCreateRooms, function(objid, roomlist) {
+                    BX_INFO('roomlist', roomlist, tagLog);
+                    cb({ err: null, ret: roomlist ? roomlist : [] });
+
+                });
+            }
+        });
+    });
 }
 
 // 显示所有进入的房间
-function listAllChatRoom (userid, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start list all room.')
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+function listAllChatRoom(sessionID, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start list all room.', tagLog);
+    let rs = thisRuntime.getRuntimeStorage('/chatroom/')
 
-  let userEnterRooms = enterRoomIDList + '_' + userid
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                BX_ERROR('listAllChatRoom error', err, tagLog);
+                cb({ err });
+            } else {
+                let userEnterRooms = enterRoomIDList + '_' + userid;
 
-  rs.getObject(userEnterRooms, function (objid, roomlist) {
-    cb(roomlist || [])
-  })
+                rs.getObject(userEnterRooms, function(objid, roomlist) {
+                    BX_INFO('listAllChatRoom response', roomlist, tagLog);
+                    cb({ err: null, ret: roomlist || [] });
+                });
+            }
+        });
+    });
+
 }
 
-function removeCreateRooms (rs, userid, roomid, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start remove create room.')
+function _removeCreateRooms(rs, userid, roomid, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start remove create room.', tagLog);
 
-  let userCreateRooms = createRoomIDList + '_' + userid
-  rs.getObject(userCreateRooms, function (objid, roomlist) {
-    if (roomlist) {
-      for (let index in roomlist) {
-        if (roomid == roomlist[index]) {
-          roomlist.splice(index, 1)
-          logger.info('after remove list', roomlist, roomid)
-          rs.setObject(userCreateRooms, roomlist, function (objid, result) {
-            logger.info('remove callback', result)
-            cb(result)
-          })
-          break
-        }
-      }
-      cb(true)
-      logger.info('could not get roomid', roomid, 'in roomlist', roomlist)
-    } else {
-      cb(true)
-      logger.info('could not get create rooms', userCreateRooms, roomlist)
-    }
-  })
-}
+    let userCreateRooms = createRoomIDList + '_' + userid
+    rs.getObject(userCreateRooms, function(objid, roomlist) {
+        if (roomlist) {
+            for (let index in roomlist) {
+                if (roomid == roomlist[index]) {
+                    rs.getObject(roomid, function(objid, roominfo) {
+                        if (roominfo) {
+                            if (roominfo.admin === userid) {
 
-function removeEnterRooms (rs, userid, roomid, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start remove enter room.')
+                                roomlist.splice(index, 1)
+                                BX_INFO('after remove list', roomlist, roomid, tagLog);
+                                rs.setObject(userCreateRooms, roomlist, function(objid, result) {
+                                    BX_INFO('remove callback', result, tagLog);
+                                    cb(result)
+                                })
+                            }
+                        } else {
+                            cb(false);
+                        }
+                    });
 
-  let userEnterRooms = enterRoomIDList + '_' + userid
-  rs.getObject(userEnterRooms, function (objid, roomlist) {
-    if (roomlist) {
-      for (let index in roomlist) {
-        if (roomid == roomlist[index]) {
-          roomlist.splice(index, 1)
-          logger.info('after remove list', roomlist, roomid)
-          rs.setObject(userEnterRooms, roomlist, function (objid, result) {
-            logger.info('remove callback', result)
-            cb(result)
-          })
-          break
-        }
-      }
-      cb(true)
-      logger.info('could not get roomid', roomid, 'in roomlist', roomlist)
-    } else {
-      cb(true)
-      logger.info('could not get enter rooms', userEnterRooms, roomlist)
-    }
-  })
-}
 
-function destroyChatRoom (userid, roomid, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start destroy room.', userid, roomid)
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
-
-  removeCreateRooms(rs, userid, roomid, function (result) {
-    if (result) {
-      removeEnterRooms(rs, userid, roomid, function (result) {
-        if (result) {
-          rs.removeObject(roomid, function (objid, ret) {
-            let em = thisRuntime.getGlobalEventManager();
-            let eventName = 'room_event_' + roomid;
-            em.removeEvent(eventName, function(){})
-            cb(ret)
-            // let em = thisRuntime.getGlobalEventManager()
-            // em.fireEvent('destroy_' + id, roomid)
-          })
+                    break
+                }
+            }
+            cb(false)
+            BX_INFO('could not get roomid', roomid, 'in roomlist', roomlist, tagLog);
         } else {
-          cb(false)
+            cb(false)
+            BX_INFO('could not get create rooms', userCreateRooms, roomlist, tagLog);
         }
-      })
-    } else {
-      cb(false)
-    }
-  })
+    })
 }
 
-function getRoomInfo (roomid, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getRoomInfo.')
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+function _removeEnterRooms(rs, userid, roomid, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start remove enter room.', tagLog);
 
-  rs.getObject(roomid, function (objid, roominfo) {
-    cb(roominfo)
-  })
+    let userEnterRooms = enterRoomIDList + '_' + userid
+    rs.getObject(userEnterRooms, function(objid, roomlist) {
+        if (roomlist) {
+            for (let index in roomlist) {
+                if (roomid == roomlist[index]) {
+                    roomlist.splice(index, 1)
+                    BX_INFO('after remove list', roomlist, roomid, tagLog);
+                    rs.setObject(userEnterRooms, roomlist, function(objid, result) {
+                        BX_INFO('remove callback', result, tagLog);
+                        cb(result)
+                    })
+                    break
+                }
+            }
+            cb(false)
+            BX_ERROR('could not get roomid', roomid, 'in roomlist', roomlist, tagLog);
+        } else {
+            cb(false)
+            BX_ERROR('could not get enter rooms', userEnterRooms, roomlist, tagLog);
+        }
+    })
+}
+
+function destroyChatRoom(sessionID, roomid, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start destroy room.', sessionID, roomid, tagLog);
+
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+
+                _removeCreateRooms(rs, userid, roomid, function(result) {
+                    if (result) {
+                        _removeEnterRooms(rs, userid, roomid, function(result) {
+                            if (result) {
+                                rs.removeObject(roomid, function(objid, ret) {
+                                    let em = thisRuntime.getGlobalEventManager();
+                                    let eventName = 'room_event_' + roomid;
+                                    em.removeEvent(eventName, function() {})
+                                    cb({ err: null, ret });
+                                    // let em = thisRuntime.getGlobalEventManager()
+                                    // em.fireEvent('destroy_' + id, roomid)
+                                })
+                            } else {
+                                cb({ err: `can't destory room ${roomid}`, ret: false });
+                            }
+                        })
+                    } else {
+                        cb({ err: `can't destory room ${roomid}`, ret: false });
+                    }
+                })
+            }
+        });
+    });
+
+
+}
+
+function getRoomInfo(sessionID, roomid, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start getRoomInfo.', sessionID, roomid, cb, tagLog);
+
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                BX_ERROR('getUserIDBySessionID callback', err, cb, typeof cb, tagLog);
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+
+                rs.getObject(roomid, function(objid, roominfo) {
+                    if (roominfo) {
+                        let u = roominfo.users.find(u => u == userid);
+                        if (u) {
+                            cb({ err: null, ret: roominfo });
+                        } else {
+                            cb({ err: `${sessionID} not enter room ${roomid}` });
+                        }
+
+                    } else {
+                        cb({ err: `could not get room by id ${roomid}` });
+                    }
+                });
+            }
+        });
+    });
+
 }
 
 // 获取公告板
-function getBBS (roomid, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getBBS.')
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+function getBBS(sessionID, roomid, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start getBBS.', tagLog);
 
-  rs.getObject(roomid, function (objid, roominfo) {
-    cb({
-      bbs: roominfo ? roominfo.bbs : null,
-      time: roominfo ? roominfo.bbsTime : null,
-    })
-  })
-}
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                BX_ERROR('chatuser.getUserIDBySessionID callback', err, userid, tagLog);
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
 
-function setBBS (userid, roomid, bbs, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getBBS.')
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                rs.getObject(roomid, function(objid, roominfo) {
+                    BX_INFO('get bbs return ', roominfo, tagLog);
 
-  rs.getObject(roomid, function (objid, roominfo) {
-    if (roominfo.admin != userid) {
-      cb(false)
-    } else {
-      roominfo.bbs = bbs
-      roominfo.bbsTime = new Date().getTime()
-      rs.setObject(roomid, roominfo, function () {})
-      cb(true)
+                    let u = roominfo.users.find(n => n == userid);
+                    if (u) {
+                        cb({
+                            err: null,
+                            ret: {
+                                bbs: roominfo ? roominfo.bbs : null,
+                                time: roominfo ? roominfo.bbsTime : null,
+                            }
+                        });
+                    } else {
+                        cb({ err: `can't find room ${roomid}` });
+                    }
 
-      let em = thisRuntime.getGlobalEventManager()
-      let eventName = 'room_event_' + roomid
-      em.fireEvent(eventName, JSON.stringify({eventType: 'bbs', value1 :roominfo.bbs, value2:roominfo.bbsTime}));
-      logger.info('fire event bbs', eventName, roomid, roominfo.bbs, roominfo.bbsTime)
-    }
-  })
-}
 
-function getAdmin (roomid, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getAdmin.')
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
-
-  rs.getObject(roomid, function (objid, roominfo) {
-    if (roominfo) {
-      cb(roominfo.admin)
-    } else {
-      cb(-1)
-    }
-  })
-}
-
-let chatRoomPackge = null;
-let chatRoomModules = {};
-
-function getChatRoomPackage(cb) {
-    if (chatRoomPackge) {
-        cb(chatRoomPackge);
-    } else {
-        let thisRuntime = getCurrentRuntime();
-        thisRuntime.loadXARPackage('chatroom', function (pkg) {
-            chatRoomPackge = pkg;
-            cb(pkg);
+                })
+            }
         });
-    }
+    });
+
 }
 
-function getChatRoomModuleByName(name, cb) {
-    if (chatRoomModules[name]) {
-        cb(chatRoomModules[name]);
-    } else {
-        getChatRoomPackage(function (pkg) {
-            pkg.loadModule(name, function (mod) {
-                chatRoomModules[name] = mod;
-                cb(mod);
+function setBBS(sessionID, roomid, bbs, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start setBBS.', tagLog);
+
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+
+                rs.getObject(roomid, function(objid, roominfo) {
+                    if (roominfo.admin != userid) {
+                        cb({ err: `Invalid permissions `, ret: false })
+                    } else {
+                        roominfo.bbs = bbs
+                        roominfo.bbsTime = new Date().getTime()
+                        rs.setObject(roomid, roominfo, function() {})
+                        cb({ err: null, ret: true });
+
+                        let em = thisRuntime.getGlobalEventManager()
+                        let eventName = 'room_event_' + roomid
+                        em.fireEvent(eventName, JSON.stringify({ eventType: 'bbs', value1: roominfo.bbs, value2: roominfo.bbsTime }));
+                        BX_INFO('fire event bbs', eventName, roomid, roominfo.bbs, roominfo.bbsTime, tagLog);
+                    }
+                })
+            }
+        });
+    });
+
+}
+
+function getAdmin(sessionID, roomid, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start getAdmin.', tagLog);
+
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+
+                rs.getObject(roomid, function(objid, roominfo) {
+                    if (roominfo) {
+                        let u = roominfo.users.find(n => n == userid);
+                        if (u) {
+                            cb({ err: null, ret: roominfo.admin });
+                        } else {
+                            cb({ err: `can't find room ${roomid}` });
+                        }
+
+                    } else {
+                        cb({ err: `could not get room by id ${roomid}`, ret: -1 });
+                    }
+                });
+            }
+        });
+    });
+
+}
+
+function _addEnterRoomLink(rs, roomid, userid, cb) {
+    BX_INFO('_addEnterRoomLink', roomid, userid, tagLog);
+
+    let userEnterRooms = enterRoomIDList + '_' + userid
+    rs.getObject(userEnterRooms, function(objid, roomlist) {
+        if (roomlist) {
+            if (roomlist.indexOf(roomid) == -1) {
+                roomlist.push(roomid)
+            }
+            rs.setObject(userEnterRooms, roomlist, function(objid, result) {
+                BX_INFO('save enter room', userEnterRooms, roomlist, result);
+                cb(result)
             })
-        })
-    }
-}
-
-function getChatRoomModule(cb) {
-    getChatRoomModuleByName('chatroom', cb);
-}
-
-function getChatUserModule(cb) {
-    getChatRoomModuleByName('chatuser', cb);
-}
-
-function getHistoryModule(cb) {
-    getChatRoomModuleByName('history', cb);
-}
-
-function addEnterRoomLink (rs, roomid, userid, cb) {
-  let userEnterRooms = enterRoomIDList + '_' + userid
-  rs.getObject(userEnterRooms, function (objid, roomlist) {
-    if (roomlist) {
-      if (roomlist.indexOf(roomid) == -1) {
-        roomlist.push(roomid)
-      }
-      rs.setObject(userEnterRooms, roomlist, function (objid, result) {
-        cb(result)
-      })
-    } else {
-      roomlist = [roomid]
-      rs.setObject(userEnterRooms, roomlist, function (objid, result) {
-        cb(result)
-      })
-    }
-  })
+        } else {
+            roomlist = [roomid]
+            rs.setObject(userEnterRooms, roomlist, function(objid, result) {
+                BX_INFO('save enter room', userEnterRooms, roomlist, result);
+                cb(result)
+            })
+        }
+    })
 }
 
 // return
@@ -359,270 +467,352 @@ function addEnterRoomLink (rs, roomid, userid, cb) {
 // 3 找不到roomid
 
 // gps = null or {latitude: 0.0, longitude: 1.1, accuracy: 10}
-function enterChatRoom (roomid, userid, gps, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start enterChatRoom.')
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+function enterChatRoom(sessionID, roomid, userid, gps, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start enterChatRoom.', tagLog);
 
-  rs.getObject(roomid, function (objid, roominfo) {
-    if (roominfo) {
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
 
-      // 已经进入,直接返回成功
-      for (let index in roominfo.users) {
-        if (roominfo.users[index] == userid) {
-          cb(0)
-          return
-        }
-      }
+                rs.getObject(roomid, function(objid, roominfo) {
+                    if (roominfo) {
 
-      // 添加用户到当前room
-      if (roominfo.enableGPS) {
-        // 比较GPS
-        // 假定经纬度偏差绝对值都是30度
-        if (gps == null) {
-          cb(1)
-          return
-        } else {
-          let delta = 30
-          if (Math.abs(gps.latitude - roominfo.gps.latitude) < delta &&
-            Math.abs(gps.longitude - roominfo.gps.longitude)) {
-            cb(1)
-          } else {
-            cb(2)
-            return
-          }
-        }
-      } else {
-        roominfo.users.push(userid)
-        rs.setObject(roomid, roominfo, function (objid, result) {
-          getHistoryModule(function(history) {
-            getChatUserModule(function (chatuser) {
-              chatuser.getUserInfo(userid, function(userinfo) {
-                history.addHistory(roomid, null, null, `${userinfo.nickName} 进入房间`, 2, function() {
+                        // 已经进入,直接返回成功
+                        for (let index in roominfo.users) {
+                            if (roominfo.users[index] == userid) {
+                                cb(null, 0);
+                            }
+                        }
 
+                        // 添加用户到当前room
+                        if (roominfo.enableGPS) {
+                            // 比较GPS
+                            // 假定经纬度偏差绝对值都是30度
+                            if (gps == null) {
+                                cb({ err: `need gps param`, ret: 1 });
+                                return
+                            } else {
+                                let delta = 30
+                                if (Math.abs(gps.latitude - roominfo.gps.latitude) < delta &&
+                                    Math.abs(gps.longitude - roominfo.gps.longitude)) {
+                                    cb({ err: `need gps param`, ret: 1 });
+                                } else {
+                                    cb({ err: `gps is not match`, ret: 2 });
+                                    return
+                                }
+                            }
+                        } else {
+                            roominfo.users.push(userid)
+                            rs.setObject(roomid, roominfo, function(objid, result) {
+                                getHistoryModule(function(history) {
+                                    getChatUserModule(function(chatuser) {
+                                        chatuser.getUserInfo(sessionID, userid, function(userinfo) {
+                                            history.addHistory(sessionID, roomid, null, null, `${userinfo.nickName} 进入房间`, 2, function() {
+
+                                            })
+                                        })
+                                    })
+
+                                })
+                            })
+                        }
+
+                        _addEnterRoomLink(rs, roomid, userid, function() {
+                            cb(null, 0);
+                        })
+                    } else {
+                        cb({ err: `could not get room id ${roomid}`, ret: 3 });
+                    }
                 })
-              })
-            })
-           
-          })
-        })
-      }
-      
-      addEnterRoomLink(rs, roomid, userid, function(){
-          cb(0)
-      })
-    } else {
-      cb(3)
-    }
-  })
-}
-
-function leaveChatRoom (roomid, userid, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start leaveChatRoom.')
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
-
-  rs.getObject(roomid, function (objid, roominfo) {
-    if (roominfo) {
-      for (let index in roominfo.users) {
-        if (roominfo.users[index] == userid) {
-          roominfo.users.splice(index, 1)
-          cb(true)
-
-          getHistoryModule(function(history) {
-            getChatUserModule(function (chatuser) {
-              chatuser.getUserInfo(userid, function(userinfo) {
-                history.addHistory(roomid, null, null, `${userinfo.nickName} 离开房间`, 2, function() {
-
-                })
-              })
-            })
-           
-          })
-
-          rs.setObject(roomid, roominfo, function () {})
-
-          let userEnterRooms = enterRoomIDList + '_' + userid
-          rs.getObject(userEnterRooms, function (objid, roomlist) {
-            if (roomlist) {
-              let idx = roomlist.indexOf(roomid)
-              if (idx != -1) {
-                roomlist.splice(idx)
-              }
-              rs.setObject(userEnterRooms, roomlist, function () {})
             }
-          })
-          return
-        }
-      }
+        });
+    });
 
-      cb(false)
-    } else {
-      cb(false)
-    }
-  })
 }
 
-function getUserCount (roomid, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getUserCount.')
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+function leaveChatRoom(sessionID, roomid, userid, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start leaveChatRoom.', tagLog);
 
-  rs.getObject(roomid, function (objid, roominfo) {
-    if (roominfo) {
-      cb(roominfo.users.length)
-    } else {
-      cb(0)
-    }
-  })
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+
+                rs.getObject(roomid, function(objid, roominfo) {
+                    if (roominfo) {
+                        for (let index in roominfo.users) {
+                            if (roominfo.users[index] == userid) {
+                                roominfo.users.splice(index, 1)
+                                cb({ err: null, ret: true });
+
+                                getHistoryModule(function(history) {
+                                    getChatUserModule(function(chatuser) {
+                                        chatuser.getUserInfo(sessionID, userid, function(userinfo) {
+                                            history.addHistory(sessionID, roomid, null, null, `${userinfo.nickName} 离开房间`, 2, function() {
+
+                                            })
+                                        })
+                                    })
+
+                                })
+
+                                rs.setObject(roomid, roominfo, function() {})
+
+                                let userEnterRooms = enterRoomIDList + '_' + userid
+                                rs.getObject(userEnterRooms, function(objid, roomlist) {
+                                    if (roomlist) {
+                                        let idx = roomlist.indexOf(roomid)
+                                        if (idx != -1) {
+                                            roomlist.splice(idx)
+                                        }
+                                        rs.setObject(userEnterRooms, roomlist, function() {})
+                                    }
+                                })
+                                return
+                            }
+                        }
+
+                        cb({ err: null, ret: false });
+                    } else {
+                        cb({ err: null, ret: false });
+                    }
+                })
+            }
+        });
+    });
+
+}
+
+function getUserCount(sessionID, roomid, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start getUserCount.', tagLog);
+
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+
+                rs.getObject(roomid, function(objid, roominfo) {
+                    if (roominfo) {
+                        let u = roominfo.users.find(n => n == userid);
+                        if (u) {
+                            cb({ err: null, ret: roominfo.users.length });
+                        } else {
+                            cb({ err: `can't find room ${roomid}` });
+                        }
+
+                    } else {
+                        cb({ err: null, ret: 0 });
+                    }
+                })
+            }
+        });
+    });
+
 }
 
 // start, end 用于分页
-function getUserList (roomid, start, end, cb) {
-  // 返回 user id list
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getUserList.')
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+function getUserList(sessionID, roomid, start, end, cb) {
+    // 返回 user id list
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start getUserList.', tagLog);
 
-  rs.getObject(roomid, function (objid, roominfo) {
-    if (roominfo) {
-      cb(roominfo.users.slice(start, end))
-    } else {
-      cb([])
-    }
-  })
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+
+                rs.getObject(roomid, function(objid, roominfo) {
+                    if (roominfo) {
+                        let u = roominfo.users.find(n => n == userid);
+                        if (u) {
+                            cb({ err: null, ret: roominfo.users.slice(start, end) });
+                        } else {
+                            cb({ err: `can't find room ${roomid}` });
+                        }
+
+                    } else {
+                        cb({ err: null, ret: [] });
+                    }
+                })
+            }
+        });
+    });
+
 }
 
-function getHistoryCount (roomid, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getHistoryCount.')
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+function getHistoryCount(sessionID, roomid, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start getHistoryCount.', tagLog);
 
-  rs.getObject(roomid, function (objid, roominfo) {
-    if (roominfo) {
-      cb(roominfo.history.length)
-    } else {
-      cb([])
-    }
-  })
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                BX_ERROR('getUserIDBySessionID callback', sessionID, err, cb, tagLog);
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+
+                rs.getObject(roomid, function(objid, roominfo) {
+                    if (roominfo) {
+                        let u = roominfo.users.find(n => n == userid);
+                        if (u) {
+                            cb({ err: null, ret: roominfo.history.length });
+                        } else {
+                            cb({ err: `can't find room ${roomid}` });
+                        }
+
+                    } else {
+                        cb({ err: null, ret: [] });
+                    }
+                })
+            }
+        });
+    });
+
 }
 
 // start, end 用于分页
-function getHistoryList (roomid, start, end, cb) {
-  // 返回record id list
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getHistoryList.', roomid, start, end)
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+function getHistoryList(sessionID, roomid, start, end, cb) {
+    // 返回record id list
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start getHistoryList.', roomid, start, end, tagLog);
 
-  rs.getObject(roomid, function (objid, roominfo) {
-    if (roominfo) {
-      logger.info('history list length,', roominfo.history.length)
-      if (end <= 0 || end > roominfo.history.length) {
-        end = 0
-      }
-      if (start <= 0 || start > roominfo.history.length) {
-        start = 0
-      }
-      cb(roominfo.history.slice(start, end))
-    } else {
-      logger.error('could not find roomid,', roomid)
-      cb([])
-    }
-  })
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                BX_ERROR('getUserIDBySessionID callback', sessionID, err, cb, tagLog);
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+
+                rs.getObject(roomid, function(objid, roominfo) {
+                    if (roominfo) {
+                        let u = roominfo.users.find(n => n == userid);
+                        if (u) {
+                            BX_INFO('history list length,', roominfo.history.length, tagLog);
+                            if (end <= 0 || end > roominfo.history.length) {
+                                end = 0
+                            }
+                            if (start <= 0 || start > roominfo.history.length) {
+                                start = 0
+                            }
+                            const historyList = roominfo.history.slice(start, end);
+                            BX_INFO('get history list return', historyList, start, end, roominfo.history, tagLog);
+                            cb({ err: null, ret: historyList });
+                        } else {
+                            cb({ err: `can't find room ${roomid}` });
+                        }
+
+                    } else {
+                        logger.error('could not find roomid,', roomid)
+                        cb({ err: null, ret: [] });
+                    }
+                })
+            }
+        });
+    });
+
 }
 
-function getHistoryListInfo (roomid, start, end, cb) {
-  getHistoryList(roomid, start, end, function (idList) {
-    if (idList.length == 0) {
-      cb([])
-    } else {
-      let cnt = 0
-      let info = []
-      for (let i = 0; i < idList.length; i++) {
-        history.getHistory(idList[i], function (info) {
-          cnt++
-          info.push(info)
-          if (cnt == idList.length) {
-            cb(info)
-          }
-        })
-      }
-    }
-  })
+function getHistoryListInfo(sessionID, roomid, start, end, cb) {
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                cb({ err });
+            } else {
+                getHistoryList(sessionID, roomid, start, end, function({err, ret:idList}) {
+                    if (idList.length == 0) {
+                        cb({ err: null, ret: [] });
+                    } else {
+                        let cnt = 0
+                        let info = []
+                        for (let i = 0; i < idList.length; i++) {
+                            history.getHistory(idList[i], function(info) {
+                                cnt++
+                                info.push(info)
+                                if (cnt == idList.length) {
+                                    cb({ err: null, ret: info });
+                                }
+                            })
+                        }
+                    }
+                })
+            }
+        });
+    });
+
+
 }
 
 /*由于此处涉及私有appid,secret,对外发布的代码GetQRCode功能将不能直接使用，需填入自己小程序的appid和secret*/
 
-function getToken (cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getToken.')
+function getToken(cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start getToken.', tagLog);
 
-  let appid = ''
-  let secret = ''
-  let tokenUrl = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appid}&secret=${secret}`
+    let appid = ''
+    let secret = ''
+    let tokenUrl = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appid}&secret=${secret}`
 
-  request(tokenUrl, function (err, res, body) {
-    cb(err, err === null ? JSON.parse(body) : null)
-  })
+    request(tokenUrl, function(err, res, body) {
+        cb(err, err === null ? JSON.parse(body) : null)
+    })
 }
 
 // getToken(function(err, body) {
 //     console.log(body)
 // })
 
-function getQRFromServer (token, path, width, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getQRFromServer.', token, path, width)
+function getQRFromServer(token, path, width, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start getQRFromServer.', token, path, width, tagLog);
 
-  let url = `https://api.weixin.qq.com/cgi-bin/wxaapp/createwxaqrcode?access_token=${token}`
-  request.post({url: url, body: JSON.stringify({path: path, width: width}), encoding: null}, function (err, res, body) {
-    if (err === null && res.headers['content-type'] === 'image/jpeg') {
-      cb(true, body)
-    } else {
-      cb(false, JSON.parse(body))
-    }
-  })
+    let url = `https://api.weixin.qq.com/cgi-bin/wxaapp/createwxaqrcode?access_token=${token}`
+    request.post({ url: url, body: JSON.stringify({ path: path, width: width }), encoding: null }, function(err, res, body) {
+        if (err === null && res.headers['content-type'] === 'image/jpeg') {
+            cb(true, body)
+        } else {
+            cb(false, JSON.parse(body))
+        }
+    })
 }
 
-function getQR (token, path, width, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getQR.', token, path, width)
+function getQR(token, path, width, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start getQR.', token, path, width, tagLog);
 
-  function qrCallback (result, body) {
-    if (result) {
-      cb(true, body)
-    } else {
-      console.log('get qr failed, get token now')
-      getToken(function (err, tokenInfo) {
-        if (tokenInfo) {
-          console.log('get token ok')
-          getQRFromServer(tokenInfo.access_token, path, width, function (result, body) {
-            cb(result, body)
-          })
+    function qrCallback(result, body) {
+        if (result) {
+            cb(true, body)
         } else {
-          console.log('could not get token')
-          cb(false)
+            console.log('get qr failed, get token now')
+            getToken(function(err, tokenInfo) {
+                if (tokenInfo) {
+                    console.log('get token ok')
+                    getQRFromServer(tokenInfo.access_token, path, width, function(result, body) {
+                        cb(result, body)
+                    })
+                } else {
+                    console.log('could not get token')
+                    cb(false)
+                }
+            })
         }
-      })
     }
-  }
 
-  getQRFromServer(token, path, width, qrCallback)
+    getQRFromServer(token, path, width, qrCallback)
 }
 
 // getQR(tokenExpire, 'pages/index?query=1', 430, function (result, body) {
@@ -634,116 +824,133 @@ function getQR (token, path, width, cb) {
 //   }
 // })
 
-function upload (buffer, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start upload.')
+function upload(buffer, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start upload.', tagLog);
 
-  var formData = {
-    custom_file: {
-      value: buffer,
-      options: {
-        filename: 'topsecret.jpg',
-        contentType: 'image/jpg'
-      }
+    var formData = {
+        custom_file: {
+            value: buffer,
+            options: {
+                filename: 'topsecret.jpg',
+                contentType: 'image/jpg'
+            }
+        }
     }
-  }
-  /*微信小程序不支持通过post直接下载图片并显示，这里使用了私有的上传服务器，上传图片文件之后返回http地址*/
-  request.post({url: 'private upload server', formData: formData}, function (err, res, body) {
-    cb(err === null, JSON.parse(body))
-  })
+    /*微信小程序不支持通过post直接下载图片并显示，这里使用了私有的上传服务器，上传图片文件之后返回http地址*/
+    request.post({ url: 'private upload server', formData: formData }, function(err, res, body) {
+        cb(err === null, JSON.parse(body))
+    })
 }
 
 let tokenID = 'wxToken'
 
-function getCacheToken (cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getCacheToken.')
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+function getCacheToken(cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start getCacheToken.', tagLog);
+    // console.log(arguments)
+    let rs = thisRuntime.getRuntimeStorage('/chatroom/')
 
-  rs.getObject(tokenID, function (objid, token) {
-    if (token) {
-      logger.info('get storage token', token)
-      cb(token)
-    } else {
-      logger.info('could not get storage token, get online now')
-      getToken(function (result, tokenInfo) {
-        if (result) {
-          logger.info('get token ok', tokenInfo)
-          saveCacheToekn(tokenInfo.access_token, function () {
-            cb(tokenInfo.access_token)
-          })
+    rs.getObject(tokenID, function(objid, token) {
+        if (token) {
+            BX_INFO('get storage token', token, tagLog);
+            cb(token)
         } else {
-          logger.info('get online token failed')
-          cb(null)
+            BX_INFO('could not get storage token, get online now', tagLog);
+            getToken(function(result, tokenInfo) {
+                if (result) {
+                    BX_INFO('get token ok', tokenInfo, tagLog);
+                    saveCacheToekn(tokenInfo.access_token, function() {
+                        cb(tokenInfo.access_token)
+                    })
+                } else {
+                    BX_INFO('get online token failed', tagLog);
+                    cb(null)
+                }
+            })
         }
-      })
-    }
-  })
-}
-
-function saveCacheToekn (token, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start saveCacheToekn.', token)
-  // console.log(arguments)
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
-
-  rs.setObject(tokenID, token, function (objID, objItem) {
-    cb(objID, objItem)
-  })
-}
-
-function getQRCode (path, width, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getQRCode.', path, width)
-
-  getCacheToken(function (token) {
-    BX_INFO('get token', token)
-    getQR(token, path, width, function (result, body) {
-      BX_INFO('get qr', result)
-      if (result) {
-        upload(body, function (result, body) {
-          logger.info('upload', result, body)
-          if (body) {
-            cb(body.url)
-          } else {
-            cb(null)
-          }
-        })
-      } else {
-        cb(null)
-      }
     })
-  })
 }
 
-function appendHistory (roomid, historyid, cb) {
-  let thisRuntime = getCurrentRuntime()
-  let logger = thisRuntime.getLogger()
-  logger.info('!!!!start getHistoryCount.')
-  // console.log(arguments)
-  
-  let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+function saveCacheToekn(token, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start saveCacheToekn.', token, tagLog);
+    // console.log(arguments)
+    let rs = thisRuntime.getRuntimeStorage('/chatroom/')
 
-  rs.getObject(roomid, function (objid, roominfo) {
-    if (roominfo) {
-      roominfo.history.push(historyid)
-      rs.setObject(roomid, roominfo, function (id, ret) {
-          //临时写一个事件触发，只通知用户有消息更新了,触发客户端主动拉取
-          let em = thisRuntime.getGlobalEventManager()
-          let eventName = 'room_event_' + roomid
-          em.fireEvent(eventName, JSON.stringify({eventType: 'count'}));
-          logger.info('fire event count')
-          cb(ret)
-      })
-    } else {
-      cb(false)
-    }
-  })
+    rs.setObject(tokenID, token, function(objID, objItem) {
+        cb(objID, objItem)
+    })
+}
+
+function getQRCode(sessionID, path, width, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start getQRCode.', path, width, tagLog);
+
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                cb({ err });
+            } else {
+                getCacheToken(function(token) {
+                    BX_INFO('get token', token, tagLog);
+                    getQR(token, path, width, function(result, body) {
+                        BX_INFO('get qr', result, tagLog);
+                        if (result) {
+                            upload(body, function(result, body) {
+                                BX_INFO('upload', result, body, tagLog);
+                                if (body) {
+                                    cb({ err: null, ret: body.url });
+                                } else {
+                                    cb({ err: `upload failed`, ret: null });
+                                }
+                            })
+                        } else {
+                            cb({ err: `get qr code failed`, ret: null });
+                        }
+                    })
+                })
+            }
+        });
+    });
+
+
+}
+
+function appendHistory(sessionID, roomid, historyid, cb) {
+    let thisRuntime = getCurrentRuntime()
+    BX_INFO('!!!!start getHistoryCount.', tagLog);
+
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+
+        BX_INFO('chatuser.getUserIDBySessionID', sessionID, roomid, historyid, tagLog);
+
+        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+            if (err) {
+                cb({ err });
+            } else {
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+
+                rs.getObject(roomid, function(objid, roominfo) {
+                    if (roominfo) {
+                        roominfo.history.push(historyid)
+                        rs.setObject(roomid, roominfo, function(id, ret) {
+                            //临时写一个事件触发，只通知用户有消息更新了,触发客户端主动拉取
+                            let em = thisRuntime.getGlobalEventManager()
+                            let eventName = 'room_event_' + roomid
+                            em.fireEvent(eventName, JSON.stringify({ eventType: 'count' }));
+                            BX_INFO('fire event count', tagLog);
+                            cb({ err: null, ret });
+                        })
+                    } else {
+                        cb({ err: null, ret: false });
+                    }
+                })
+            }
+        });
+    });
+
+
 }
 
 module.exports = {}

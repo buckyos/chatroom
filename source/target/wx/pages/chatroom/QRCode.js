@@ -18,7 +18,7 @@ Page({
     let id = options.id
     this.setData({name: options.name, id: options.id})
     buckyhelper.getChatRoomModule(function(chatroom){
-      chatroom.getQRCode(`/pages/index/index?id=${options.id}`, buckyhelper.rpx2px(that.data.QRSize), function(url){
+      chatroom.getQRCode(buckyhelper.getSessionID(), `/pages/index/index?id=${options.id}`, buckyhelper.rpx2px(that.data.QRSize), function(url){
         if(url){
           that.setData({QRImageUrl:url})
         }

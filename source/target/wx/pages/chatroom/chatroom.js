@@ -2,6 +2,9 @@ var util = require('../../utils/util.js')
 var core = require('../../bucky/wx_core.js')
 let buckyhelper = require('../../utils/buckyhelper');
 
+const BX_INFO = core.BX_INFO;
+const BX_ERROR = core.BX_ERROR;
+
 //FetchMessage(begin. step)
 //begin > 0: normal
 //begin < 0: count+begin
@@ -131,33 +134,37 @@ Page({
   FetchMessage:function(begin, num){
     let that = this;
     buckyhelper.getChatRoomModule(function (chatroom) {
-      chatroom.getHistoryCount(that.data.id, function (count) {
+      chatroom.getHistoryCount(buckyhelper.getSessionID(), that.data.id, function (count) {
+        console.assert(count.err == null);
+
         let start = begin;
         if (begin < 0){
-          start = count+begin
+          start = count.ret+begin
         }
         let end = start+num;
         if(num < 0){
           end = begin;
           start = end+num
         } else if(num == 0){
-          end = count
+          end = count.ret;
         }
 
         if (start < 0){
           start = 0
         }
-        if(end > count){
-          end = count
+        if(end > count.ret){
+          end = count.ret;
         }
 
         if(start == that.data.historyStartIndex && end == that.data.historyEndIndex){
           return
         }
 
-        console.log('get history list, start', start, 'end', end);
-        chatroom.getHistoryList(that.data.id, start, end, function (historyList) {
+        BX_INFO('get history list, start', start, 'end', end);
+        chatroom.getHistoryList(buckyhelper.getSessionID(), that.data.id, start, end, function (historyList) {
           console.log('get history list callback', historyList);
+          console.assert(historyList.err == null);
+
           if(that.data.historyStartIndex == -1 || start < that.data.historyStartIndex){
             that.setData({historyStartIndex:start})
           }
@@ -165,7 +172,7 @@ Page({
             that.setData({historyEndIndex:end})
           }
           buckyhelper.getHistoryModule(function (history) {
-            that.getHistoryInfoByHistoryList(history, historyList, function (infos) {
+            that.getHistoryInfoByHistoryList(history, historyList.ret, function (infos) {
               if (infos.length == 0){
                 return;
               }
@@ -226,13 +233,14 @@ Page({
     console.log(e.detail.value.message);
     let content = e.detail.value.message;
     let that = this;
-    let openid = buckyhelper.getOpenID();
+    let openid = buckyhelper.getSessionID();
     buckyhelper.getHistoryModule(function (history) {
         console.assert(history != null)
         console.log('add history', that.data.roomInfo.id, openid, content);
-        history.addHistory(that.data.roomInfo.id, openid, '', content, 1, function (result) {
+        history.addHistory(buckyhelper.getSessionID(), that.data.roomInfo.id, openid, '', content, 1, function (result) {
+          console.assert(result.err || result.ret);
           console.log('add history result', result);
-          if(result){
+          if(result.ret){
             that.setData({inputValue:""});
             that.onFetchMessage();
           }
@@ -251,12 +259,18 @@ Page({
         if (historyIndex > historyList.length) {
           cb(historyInfos);
         } else {
-          historyInfos.push(historyInfo);
-          history.getHistory(historyList[historyIndex++], getHistoryInfoCallback);
+          console.assert(historyInfo.err == null);
+          historyInfos.push(historyInfo.ret);
+
+          const id = historyList[historyIndex++];
+          // console.assert(id);
+          history.getHistory(buckyhelper.getSessionID(), id, getHistoryInfoCallback);
         }
       }
 
-      history.getHistory(historyList[historyIndex++], getHistoryInfoCallback);
+      const id = historyList[historyIndex++];
+      console.assert(id);
+      history.getHistory(buckyhelper.getSessionID(), id, getHistoryInfoCallback);
     }
   },
   OnEnterAdminRoom: function(event){
