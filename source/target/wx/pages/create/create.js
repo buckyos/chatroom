@@ -23,7 +23,7 @@ Page({
     //let expire = e.detail.value.expire;
     let that = this
     buckyhelper.getChatRoomModule(function(chatroom){
-      let openid = buckyhelper.getOpenID()
+      let openid = buckyhelper.getSessionID();
       console.log("create room", { openid: openid, name: name});
       let gps = {};
       if (that.data.limitLocation){
@@ -31,10 +31,12 @@ Page({
         gps["longitude"] = that.data.longitude
       }
       chatroom.createRoom(openid, name, 0, gps, function (roominfo) {
+        console.assert(roominfo.err || roominfo.ret, roominfo);
         console.log("create room callback", roominfo);
         wx.hideToast()
-        if (roominfo){
-          wx.redirectTo({url: `../chatroom/chatroom?id=${roominfo.id}`});
+        if (roominfo.ret){
+          console.assert(roominfo.ret.id);
+          wx.redirectTo({url: `../chatroom/chatroom?id=${roominfo.ret.id}`});
         } else {
           wx.showToast({ title: '创建房间失败!!' })
         }
