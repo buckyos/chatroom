@@ -4,7 +4,8 @@ const util = require('util');
 // 聊天记录
 
 function tagLog() {
-    return 'history__server';
+    // return 'history__server';
+    return getCurrentTraceInfo();
 }
 
 
@@ -36,26 +37,26 @@ function getPackageLoader() {
 const packageLoader = getPackageLoader();
 
 function getNextHistoryID(rs, cb) {
-    let nexthistoryid = 'next_history_id'
-    BX_INFO('getNextHistoryID get', nexthistoryid, tagLog);
+    let nexthistoryid = 'next_history_id';
+    BX_INFO('getNextHistoryID get', nexthistoryid, tagLog());
     rs.getObject(nexthistoryid, function(objid, obj) {
-        BX_INFO('getNextHistoryID get', nexthistoryid, 'callback', obj, tagLog);
+        BX_INFO('getNextHistoryID get', nexthistoryid, 'callback', obj, tagLog());
         if (obj) {
-            obj.id = obj.id + 1
-            BX_INFO('getNextHistoryID set object', nexthistoryid, obj, tagLog);
+            obj.id = obj.id + 1;
+            BX_INFO('getNextHistoryID set object', nexthistoryid, obj, tagLog());
             rs.setObject(nexthistoryid, obj, function(objId, result) {
-                BX_INFO('getNextHistoryID set object1 callback', obj, result, tagLog);
+                BX_INFO('getNextHistoryID set object1 callback', obj, result, tagLog());
                 if (result) {
-                    cb(obj.id)
+                    cb(obj.id);
                 } else {
-                    cb(null)
+                    cb(null);
                 }
             })
         } else {
-            BX_INFO('getNextHistoryID get next history id callback init id', tagLog);
+            BX_INFO('getNextHistoryID get next history id callback init id', tagLog());
             let initData = { id: 12122 }
             rs.setObject(nexthistoryid, initData, function(objId, result) {
-                BX_INFO('getNextHistoryID set object2 callback', initData, result, tagLog);
+                BX_INFO('getNextHistoryID set object2 callback', initData, result, tagLog());
                 if (result) {
                     cb(initData.id)
                 } else {
@@ -68,13 +69,13 @@ function getNextHistoryID(rs, cb) {
 
 function addHistory(sessionID, roomid, from, to, content, type, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start addHistory.', tagLog);
+    BX_INFO('!!!!start addHistory.', tagLog());
 
     packageLoader('chatuser', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: from }) {
-            BX_INFO(' chatuser.getUserIDBySessionID callback', err, from, tagLog);
+            BX_INFO(' chatuser.getUserIDBySessionID callback', err, from, tagLog());
             if (err) {
-                BX_ERROR('getUserIDBySessionID callback', err, sessionID, roomid, content, from, to, tagLog);
+                BX_ERROR('getUserIDBySessionID callback', err, sessionID, roomid, content, from, to, tagLog());
                 cb({ err });
             } else {
 
@@ -84,11 +85,11 @@ function addHistory(sessionID, roomid, from, to, content, type, cb) {
                     BX_INFO('loadPackageModule callback', chatroom, tagLog());
 
                     chatroom.getRoomInfo(sessionID, roomid, function(roominfo) {
-                        BX_INFO('chatroom.getRoomInfo callback', roomid, roominfo, cb, tagLog);
+                        BX_INFO('chatroom.getRoomInfo callback', roomid, roominfo, cb, tagLog());
                         if (roominfo.ret) {
 
                             getNextHistoryID(rs, function(historyid) {
-                                BX_INFO('get next history id callback', historyid, tagLog);
+                                BX_INFO('get next history id callback', historyid, tagLog());
 
                                 let info = {
                                     id: historyid,
@@ -100,22 +101,22 @@ function addHistory(sessionID, roomid, from, to, content, type, cb) {
                                     type: type
                                 }
 
-                                BX_INFO('create history info', info, tagLog);
+                                BX_INFO('create history info', info, tagLog());
 
                                 rs.setObject(historyid, info, function(objid, result) {
                                     if (result) {
                                         chatroom.appendHistory(sessionID, roomid, historyid, function(ret) {
-                                            BX_INFO('chatroom.appendHistory callback', ret, tagLog);
+                                            BX_INFO('chatroom.appendHistory callback', ret, tagLog());
                                             cb({ err: null, ret: ret.ret });
                                         })
                                     } else {
-                                        BX_ERROR("setStorage Failed", tagLog);
+                                        BX_ERROR("setStorage Failed", tagLog());
                                         cb({ err: `setStorage Failed`, ret: false });
                                     }
                                 })
                             })
                         } else {
-                            BX_ERROR("no roominfo", tagLog);
+                            BX_ERROR("no roominfo", tagLog());
                             cb({ err: `could not find room id by ${roomid}`, ret: false });
                         }
                     })
@@ -145,7 +146,7 @@ function getHistory(sessionID, historyid, cb) {
     BX_INFO('start getHistory. ', sessionID, historyid, tagLog)
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
-        BX_INFO('chatuser.getUserIDBySessionID', sessionID, historyid, tagLog);
+        BX_INFO('chatuser.getUserIDBySessionID', sessionID, historyid, tagLog());
 
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
             if (err) {
@@ -164,7 +165,7 @@ function getHistory(sessionID, historyid, cb) {
                                     cb({ err });
                                 } else {
                                     let rid = ret.find(n => n == info.roomid);
-                                    BX_INFO(`get history enter room list=`, ret, ` history info=`, info, tagLog);
+                                    BX_INFO(`get history enter room list=`, ret, ` history info=`, info, tagLog());
                                     if (rid) {
                                         cb({ err: null, ret: info });
                                     } else {
@@ -173,7 +174,7 @@ function getHistory(sessionID, historyid, cb) {
                                                 cb({ err });
                                             } else {
                                                 let rid = ret.find(n => n == info.roomid);
-                                                BX_INFO(`get history create room list=`, ret, ` history info=`, info, tagLog);
+                                                BX_INFO(`get history create room list=`, ret, ` history info=`, info, tagLog());
                                                 if (rid) {
                                                     cb({ err: null, ret: info });
                                                 } else {

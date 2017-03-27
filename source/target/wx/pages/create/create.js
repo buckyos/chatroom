@@ -1,7 +1,13 @@
-var util = require('../../utils/util.js')
+const util = require('../../utils/util.js')
 require('../../utils/date-utils')
-var core = require('../../bucky/wx_core.js')
-let buckyhelper = require('../../utils/buckyhelper');
+const core = require('../../bucky/wx_core.js')
+const buckyhelper = require('../../utils/buckyhelper');
+const CallChain = core.CallChain;
+const setCurrentCallChain = core.setCurrentCallChain;
+const getCurrentTraceInfo = core.getCurrentTraceInfo;
+const BX_INFO = core.BX_INFO;
+const BX_ERROR = core.BX_ERROR;
+
 Page({
   data: {
     // date: '2016-09-01'
@@ -18,22 +24,28 @@ Page({
     });
   },
   formSubmit: function (e) {
-    console.log(e.detail.value);
+    BX_INFO(e.detail.value, getCurrentTraceInfo());
     let name = e.detail.value.name;
     //let expire = e.detail.value.expire;
-    let that = this
+    let that = this;
     buckyhelper.getChatRoomModule(function(chatroom){
       let openid = buckyhelper.getSessionID();
-      console.log("create room", { openid: openid, name: name});
+      BX_INFO("create room", { openid: openid, name: name}, getCurrentTraceInfo());
       let gps = {};
       if (that.data.limitLocation){
-        gps["latitude"] = that.data.latitude
-        gps["longitude"] = that.data.longitude
+        gps["latitude"] = that.data.latitude;
+        gps["longitude"] = that.data.longitude;
       }
+
+      let cc = new CallChain();
+      setCurrentCallChain(cc);
+
+      cc.logCall('createRoom');
       chatroom.createRoom(openid, name, 0, gps, function (roominfo) {
+        cc.logReturn('createRoom');
         console.assert(roominfo.err || roominfo.ret, roominfo);
-        console.log("create room callback", roominfo);
-        wx.hideToast()
+        BX_INFO("create room callback", roominfo, getCurrentTraceInfo());
+        wx.hideToast();
         if (roominfo.ret){
           console.assert(roominfo.ret.id);
           wx.redirectTo({url: `../chatroom/chatroom?id=${roominfo.ret.id}`});
@@ -47,8 +59,8 @@ Page({
         icon: 'loading',
         duration: 10000,
         mask: true,
-      })
-    })
+      });
+    });
   },
 
   bindDateChange: function (e) {
@@ -67,20 +79,20 @@ Page({
             latitude: res.latitude,
             longitude: res.longitude,
             address:res.address+" "+res.name            
-          })
+          });
           // success
         },
         fail: function() {
           // fail
           wx.showToast({
             title: "位置获取失败，不可限定位置"
-          })
-          that.setData({limitLocation: false})
+          });
+          that.setData({limitLocation: false});
         }
-      })
+      });
     } else {
-      that.setData({limitLocation: false})
+      that.setData({limitLocation: false});
     }
   }
 
-})
+});

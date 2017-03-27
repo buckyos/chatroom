@@ -1,0 +1,9 @@
+
+.DS_Store
+.vscode/
+*node_modules/
+*_proxy/
+/master
+/node_core.js
+/proxytools.js
+/tools.js

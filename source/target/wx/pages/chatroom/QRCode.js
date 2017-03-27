@@ -1,7 +1,11 @@
 // pages/chatroom/QRCode.js
 
-let buckyhelper = require('../../utils/buckyhelper')
-let qrcode = require('../../utils/qrcode.js')
+const buckyhelper = require('../../utils/buckyhelper')
+const qrcode = require('../../utils/qrcode.js')
+
+const core = require('../../bucky/wx_core.js');
+const CallChain = core.CallChain;
+const setCurrentCallChain = core.setCurrentCallChain;
 
 Page({
   data:{
@@ -14,13 +18,13 @@ Page({
   },
   onLoad:function(options){
     // 页面初始化 options为页面跳转所带来的参数
-    let that = this
-    let id = options.id
-    this.setData({name: options.name, id: options.id})
+    let that = this;
+    let id = options.id;
+    this.setData({name: options.name, id: options.id});
     buckyhelper.getChatRoomModule(function(chatroom){
       chatroom.getQRCode(buckyhelper.getSessionID(), `/pages/index/index?id=${options.id}`, buckyhelper.rpx2px(that.data.QRSize), function(url){
         if(url){
-          that.setData({QRImageUrl:url})
+          that.setData({QRImageUrl:url});
         }
       })
     })
@@ -43,6 +47,6 @@ Page({
     })
   },
   onLoadQRImage:function(event){
-    this.setData({QRImageWidth:event.detail.width, QRImageHeight:event.detail.height})
+    this.setData({QRImageWidth:event.detail.width, QRImageHeight:event.detail.height});
   }
-})
+});

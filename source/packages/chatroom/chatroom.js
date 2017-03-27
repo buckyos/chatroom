@@ -5,40 +5,29 @@ let request = require('request')
 // let history = require('history')
 
 function tagLog() {
-    return 'chatroom__server';
+    // return 'chatroom__server'; 
+    return getCurrentTraceInfo();
 }
-
 
 // 带缓存的模块加载器
 function getPackageLoader() {
     let packageCache = [];
     return function(packageName, moduleName, cb) {
-        // BX_INFO(`packageLoader ${packageName} ${moduleName}`, tagLog);
-
         if (packageCache[packageName]) {
-            // BX_INFO(`packageLoader ${packageName} hit cache`, tagLog);
             if (packageCache[packageName][moduleName]) {
-                // BX_INFO(`packageLoader ${moduleName} hit cache`, tagLog);
                 cb(packageCache[packageName][moduleName]);
             } else {
-                // BX_INFO(`packageLoader load module ${moduleName}`, tagLog);
                 packageCache[packageName].loadModule(moduleName, function(mod) {
-                    // BX_INFO(`packageLoader load module success ${mod}`, tagLog);
                     packageCache[packageName][moduleName] = mod;
                     cb(mod);
                 });
             }
         } else {
             let thisRuntime = getCurrentRuntime();
-            // BX_INFO(`packageLoader load xar package ${packageName}`, tagLog);
-
             thisRuntime.loadXARPackage(packageName, function(pkg) {
-                // BX_INFO(`packageLoader load xar package ok ${packageName}`, tagLog);
                 packageCache[packageName] = pkg;
 
-                // BX_INFO(`packageLoader load module ${moduleName}`, tagLog);
                 pkg.loadModule(moduleName, function(mod) {
-                    // BX_INFO(`packageLoader load moudle ok ` + mod, tagLog);
                     packageCache[packageName][moduleName] = mod;
                     cb(mod);
                 });
@@ -71,25 +60,24 @@ function getNextRoomID(rs, cb) {
     })
 }
 
-let createRoomIDList = 'createRoomIDList'
-let enterRoomIDList = 'enterRoomIDList'
+let createRoomIDList = 'createRoomIDList';
+let enterRoomIDList = 'enterRoomIDList';
 
 function addCreateRoomLink(rs, userid, roomid, cb) {
-    let thisRuntime = getCurrentRuntime()
-    let userCreateRooms = createRoomIDList + '_' + userid
+    let userCreateRooms = createRoomIDList + '_' + userid;
     rs.getObject(userCreateRooms, function(objid, roomlist) {
         if (roomlist) {
-            roomlist.push(roomid)
+            roomlist.push(roomid);
             rs.setObject(userCreateRooms, roomlist, function(objid, result) {
-                BX_INFO('set user create room list 1', roomlist, result, tagLog);
-                cb(result)
-            })
+                BX_INFO('set user create room list 1', roomlist, result, tagLog());
+                cb(result);
+            });
         } else {
-            roomlist = [roomid]
+            roomlist = [roomid];
             rs.setObject(userCreateRooms, roomlist, function(objid, result) {
-                BX_INFO('set user create room list 2', roomlist, result, tagLog);
-                cb(result)
-            })
+                BX_INFO('set user create room list 2', roomlist, result, tagLog());
+                cb(result);
+            });
         }
     })
 }
@@ -100,15 +88,15 @@ function createRoomEvent(id, cb) {
 
     let eventName = 'room_event_' + id;
     em.createEvent(eventName, function(result) {
-        BX_INFO('create event', eventName, result);
+        BX_INFO('create event', eventName, result, tagLog());
         cb(result);
     })
 }
 
 // gps = null or {latitude: 0.0, longitude: 1.1, accuracy: 10}
 function createRoom(sessionID, roomname, expiretime, gps, cb) {
-    let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start create room.', tagLog);
+    let thisRuntime = getCurrentRuntime();
+    BX_INFO('!!!!start create room.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
@@ -130,37 +118,36 @@ function createRoom(sessionID, roomname, expiretime, gps, cb) {
                         time: new Date().getTime()
                     }
 
-                    BX_INFO('set object', id, newRoom, tagLog);
-                    rs.setObject(id, newRoom, function(objid, result) {
-                        addCreateRoomLink(rs, userid, id, function() {
-                            createRoomEvent(id, function(result) {
-                                if (result === ErrorCode.RESULT_OK) {
-                                    BX_INFO('create room response ok', newRoom, tagLog);
+                    BX_INFO('set object', id, newRoom, tagLog());
+                    createRoomEvent(id, function(result) {
+                        if (result === ErrorCode.RESULT_OK) {
+                            BX_INFO('create room response ok', newRoom, tagLog());
+
+                            rs.setObject(id, newRoom, function(objid, result) {
+                                addCreateRoomLink(rs, userid, id, function() {
                                     cb({ err: null, ret: newRoom });
-                                } else {
-                                    BX_ERROR('create room event failed, result', result, tagLog);
-                                    cb({ err: `create room event failed` });
-                                }
+                                })
                             });
-                        });
+                        } else {
+                            BX_ERROR('create room event failed, result', result, tagLog());
+                            cb({ err: `create room event failed` });
+                        }
                     });
                 });
             }
         });
     });
-
-
 }
 
 // 显示已创建的房间
 function listChatRoom(sessionID, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start list room.', tagLog);
+    BX_INFO('!!!!start list room.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
-        BX_INFO(`chatuser module ${chatuser}`, chatuser, tagLog);
+        BX_INFO(`chatuser module ${chatuser}`, chatuser, tagLog());
 
-        BX_INFO(`getUserIDBySessionID type is ${typeof chatuser.getUserIDBySessionID}`, tagLog);
+        BX_INFO(`getUserIDBySessionID type is ${typeof chatuser.getUserIDBySessionID}`, tagLog());
 
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
             if (err) {
@@ -169,9 +156,9 @@ function listChatRoom(sessionID, cb) {
                 let rs = thisRuntime.getRuntimeStorage('/chatroom/')
 
                 let userCreateRooms = createRoomIDList + '_' + userid
-                BX_INFO('userCreateRooms', userCreateRooms, tagLog);
+                BX_INFO('userCreateRooms', userCreateRooms, tagLog());
                 rs.getObject(userCreateRooms, function(objid, roomlist) {
-                    BX_INFO('roomlist', roomlist, tagLog);
+                    BX_INFO('roomlist', roomlist, tagLog());
                     cb({ err: null, ret: roomlist ? roomlist : [] });
 
                 });
@@ -183,19 +170,19 @@ function listChatRoom(sessionID, cb) {
 // 显示所有进入的房间
 function listAllChatRoom(sessionID, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start list all room.', tagLog);
+    BX_INFO('!!!!start list all room.', tagLog());
     let rs = thisRuntime.getRuntimeStorage('/chatroom/')
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
             if (err) {
-                BX_ERROR('listAllChatRoom error', err, tagLog);
+                BX_ERROR('listAllChatRoom error', err, tagLog());
                 cb({ err });
             } else {
                 let userEnterRooms = enterRoomIDList + '_' + userid;
 
                 rs.getObject(userEnterRooms, function(objid, roomlist) {
-                    BX_INFO('listAllChatRoom response', roomlist, tagLog);
+                    BX_INFO('listAllChatRoom response', roomlist, tagLog());
                     cb({ err: null, ret: roomlist || [] });
                 });
             }
@@ -206,7 +193,7 @@ function listAllChatRoom(sessionID, cb) {
 
 function _removeCreateRooms(rs, userid, roomid, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start remove create room.', tagLog);
+    BX_INFO('!!!!start remove create room.', tagLog());
 
     let userCreateRooms = createRoomIDList + '_' + userid
     rs.getObject(userCreateRooms, function(objid, roomlist) {
@@ -218,9 +205,9 @@ function _removeCreateRooms(rs, userid, roomid, cb) {
                             if (roominfo.admin === userid) {
 
                                 roomlist.splice(index, 1)
-                                BX_INFO('after remove list', roomlist, roomid, tagLog);
+                                BX_INFO('after remove list', roomlist, roomid, tagLog());
                                 rs.setObject(userCreateRooms, roomlist, function(objid, result) {
-                                    BX_INFO('remove callback', result, tagLog);
+                                    BX_INFO('remove callback', result, tagLog());
                                     cb(result)
                                 })
                             }
@@ -234,17 +221,17 @@ function _removeCreateRooms(rs, userid, roomid, cb) {
                 }
             }
             cb(false)
-            BX_INFO('could not get roomid', roomid, 'in roomlist', roomlist, tagLog);
+            BX_INFO('could not get roomid', roomid, 'in roomlist', roomlist, tagLog());
         } else {
             cb(false)
-            BX_INFO('could not get create rooms', userCreateRooms, roomlist, tagLog);
+            BX_INFO('could not get create rooms', userCreateRooms, roomlist, tagLog());
         }
     })
 }
 
 function _removeEnterRooms(rs, userid, roomid, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start remove enter room.', tagLog);
+    BX_INFO('!!!!start remove enter room.', tagLog());
 
     let userEnterRooms = enterRoomIDList + '_' + userid
     rs.getObject(userEnterRooms, function(objid, roomlist) {
@@ -252,26 +239,26 @@ function _removeEnterRooms(rs, userid, roomid, cb) {
             for (let index in roomlist) {
                 if (roomid == roomlist[index]) {
                     roomlist.splice(index, 1)
-                    BX_INFO('after remove list', roomlist, roomid, tagLog);
+                    BX_INFO('after remove list', roomlist, roomid, tagLog());
                     rs.setObject(userEnterRooms, roomlist, function(objid, result) {
-                        BX_INFO('remove callback', result, tagLog);
+                        BX_INFO('remove callback', result, tagLog());
                         cb(result)
                     })
                     break
                 }
             }
             cb(false)
-            BX_ERROR('could not get roomid', roomid, 'in roomlist', roomlist, tagLog);
+            BX_ERROR('could not get roomid', roomid, 'in roomlist', roomlist, tagLog());
         } else {
             cb(false)
-            BX_ERROR('could not get enter rooms', userEnterRooms, roomlist, tagLog);
+            BX_ERROR('could not get enter rooms', userEnterRooms, roomlist, tagLog());
         }
     })
 }
 
 function destroyChatRoom(sessionID, roomid, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start destroy room.', sessionID, roomid, tagLog);
+    BX_INFO('!!!!start destroy room.', sessionID, roomid, tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
@@ -309,12 +296,12 @@ function destroyChatRoom(sessionID, roomid, cb) {
 
 function getRoomInfo(sessionID, roomid, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start getRoomInfo.', sessionID, roomid, cb, tagLog);
+    BX_INFO('!!!!start getRoomInfo.', sessionID, roomid, cb, tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
             if (err) {
-                BX_ERROR('getUserIDBySessionID callback', err, cb, typeof cb, tagLog);
+                BX_ERROR('getUserIDBySessionID callback', err, cb, typeof cb, tagLog());
                 cb({ err });
             } else {
                 let rs = thisRuntime.getRuntimeStorage('/chatroom/')
@@ -341,18 +328,18 @@ function getRoomInfo(sessionID, roomid, cb) {
 // 获取公告板
 function getBBS(sessionID, roomid, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start getBBS.', tagLog);
+    BX_INFO('!!!!start getBBS.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
             if (err) {
-                BX_ERROR('chatuser.getUserIDBySessionID callback', err, userid, tagLog);
+                BX_ERROR('chatuser.getUserIDBySessionID callback', err, userid, tagLog());
                 cb({ err });
             } else {
                 let rs = thisRuntime.getRuntimeStorage('/chatroom/')
 
                 rs.getObject(roomid, function(objid, roominfo) {
-                    BX_INFO('get bbs return ', roominfo, tagLog);
+                    BX_INFO('get bbs return ', roominfo, tagLog());
 
                     let u = roominfo.users.find(n => n == userid);
                     if (u) {
@@ -377,7 +364,7 @@ function getBBS(sessionID, roomid, cb) {
 
 function setBBS(sessionID, roomid, bbs, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start setBBS.', tagLog);
+    BX_INFO('!!!!start setBBS.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
@@ -398,7 +385,7 @@ function setBBS(sessionID, roomid, bbs, cb) {
                         let em = thisRuntime.getGlobalEventManager()
                         let eventName = 'room_event_' + roomid
                         em.fireEvent(eventName, JSON.stringify({ eventType: 'bbs', value1: roominfo.bbs, value2: roominfo.bbsTime }));
-                        BX_INFO('fire event bbs', eventName, roomid, roominfo.bbs, roominfo.bbsTime, tagLog);
+                        BX_INFO('fire event bbs', eventName, roomid, roominfo.bbs, roominfo.bbsTime, tagLog());
                     }
                 })
             }
@@ -409,7 +396,7 @@ function setBBS(sessionID, roomid, bbs, cb) {
 
 function getAdmin(sessionID, roomid, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start getAdmin.', tagLog);
+    BX_INFO('!!!!start getAdmin.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
@@ -438,7 +425,7 @@ function getAdmin(sessionID, roomid, cb) {
 }
 
 function _addEnterRoomLink(rs, roomid, userid, cb) {
-    BX_INFO('_addEnterRoomLink', roomid, userid, tagLog);
+    BX_INFO('_addEnterRoomLink', roomid, userid, tagLog());
 
     let userEnterRooms = enterRoomIDList + '_' + userid
     rs.getObject(userEnterRooms, function(objid, roomlist) {
@@ -469,7 +456,7 @@ function _addEnterRoomLink(rs, roomid, userid, cb) {
 // gps = null or {latitude: 0.0, longitude: 1.1, accuracy: 10}
 function enterChatRoom(sessionID, roomid, userid, gps, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start enterChatRoom.', tagLog);
+    BX_INFO('!!!!start enterChatRoom.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
@@ -536,7 +523,7 @@ function enterChatRoom(sessionID, roomid, userid, gps, cb) {
 
 function leaveChatRoom(sessionID, roomid, userid, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start leaveChatRoom.', tagLog);
+    BX_INFO('!!!!start leaveChatRoom.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
@@ -592,7 +579,7 @@ function leaveChatRoom(sessionID, roomid, userid, cb) {
 
 function getUserCount(sessionID, roomid, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start getUserCount.', tagLog);
+    BX_INFO('!!!!start getUserCount.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
@@ -624,7 +611,7 @@ function getUserCount(sessionID, roomid, cb) {
 function getUserList(sessionID, roomid, start, end, cb) {
     // 返回 user id list
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start getUserList.', tagLog);
+    BX_INFO('!!!!start getUserList.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
@@ -654,12 +641,12 @@ function getUserList(sessionID, roomid, start, end, cb) {
 
 function getHistoryCount(sessionID, roomid, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start getHistoryCount.', tagLog);
+    BX_INFO('!!!!start getHistoryCount.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
             if (err) {
-                BX_ERROR('getUserIDBySessionID callback', sessionID, err, cb, tagLog);
+                BX_ERROR('getUserIDBySessionID callback', sessionID, err, cb, tagLog());
                 cb({ err });
             } else {
                 let rs = thisRuntime.getRuntimeStorage('/chatroom/')
@@ -687,12 +674,12 @@ function getHistoryCount(sessionID, roomid, cb) {
 function getHistoryList(sessionID, roomid, start, end, cb) {
     // 返回record id list
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start getHistoryList.', roomid, start, end, tagLog);
+    BX_INFO('!!!!start getHistoryList.', roomid, start, end, tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
             if (err) {
-                BX_ERROR('getUserIDBySessionID callback', sessionID, err, cb, tagLog);
+                BX_ERROR('getUserIDBySessionID callback', sessionID, err, cb, tagLog());
                 cb({ err });
             } else {
                 let rs = thisRuntime.getRuntimeStorage('/chatroom/')
@@ -701,7 +688,7 @@ function getHistoryList(sessionID, roomid, start, end, cb) {
                     if (roominfo) {
                         let u = roominfo.users.find(n => n == userid);
                         if (u) {
-                            BX_INFO('history list length,', roominfo.history.length, tagLog);
+                            BX_INFO('history list length,', roominfo.history.length, tagLog());
                             if (end <= 0 || end > roominfo.history.length) {
                                 end = 0
                             }
@@ -709,7 +696,7 @@ function getHistoryList(sessionID, roomid, start, end, cb) {
                                 start = 0
                             }
                             const historyList = roominfo.history.slice(start, end);
-                            BX_INFO('get history list return', historyList, start, end, roominfo.history, tagLog);
+                            BX_INFO('get history list return', historyList, start, end, roominfo.history, tagLog());
                             cb({ err: null, ret: historyList });
                         } else {
                             cb({ err: `can't find room ${roomid}` });
@@ -732,7 +719,7 @@ function getHistoryListInfo(sessionID, roomid, start, end, cb) {
             if (err) {
                 cb({ err });
             } else {
-                getHistoryList(sessionID, roomid, start, end, function({err, ret:idList}) {
+                getHistoryList(sessionID, roomid, start, end, function({ err, ret: idList }) {
                     if (idList.length == 0) {
                         cb({ err: null, ret: [] });
                     } else {
@@ -760,7 +747,7 @@ function getHistoryListInfo(sessionID, roomid, start, end, cb) {
 
 function getToken(cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start getToken.', tagLog);
+    BX_INFO('!!!!start getToken.', tagLog());
 
     let appid = ''
     let secret = ''
@@ -777,7 +764,7 @@ function getToken(cb) {
 
 function getQRFromServer(token, path, width, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start getQRFromServer.', token, path, width, tagLog);
+    BX_INFO('!!!!start getQRFromServer.', token, path, width, tagLog());
 
     let url = `https://api.weixin.qq.com/cgi-bin/wxaapp/createwxaqrcode?access_token=${token}`
     request.post({ url: url, body: JSON.stringify({ path: path, width: width }), encoding: null }, function(err, res, body) {
@@ -791,7 +778,7 @@ function getQRFromServer(token, path, width, cb) {
 
 function getQR(token, path, width, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start getQR.', token, path, width, tagLog);
+    BX_INFO('!!!!start getQR.', token, path, width, tagLog());
 
     function qrCallback(result, body) {
         if (result) {
@@ -826,7 +813,7 @@ function getQR(token, path, width, cb) {
 
 function upload(buffer, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start upload.', tagLog);
+    BX_INFO('!!!!start upload.', tagLog());
 
     var formData = {
         custom_file: {
@@ -847,24 +834,24 @@ let tokenID = 'wxToken'
 
 function getCacheToken(cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start getCacheToken.', tagLog);
+    BX_INFO('!!!!start getCacheToken.', tagLog());
     // console.log(arguments)
     let rs = thisRuntime.getRuntimeStorage('/chatroom/')
 
     rs.getObject(tokenID, function(objid, token) {
         if (token) {
-            BX_INFO('get storage token', token, tagLog);
+            BX_INFO('get storage token', token, tagLog());
             cb(token)
         } else {
-            BX_INFO('could not get storage token, get online now', tagLog);
+            BX_INFO('could not get storage token, get online now', tagLog());
             getToken(function(result, tokenInfo) {
                 if (result) {
-                    BX_INFO('get token ok', tokenInfo, tagLog);
+                    BX_INFO('get token ok', tokenInfo, tagLog());
                     saveCacheToekn(tokenInfo.access_token, function() {
                         cb(tokenInfo.access_token)
                     })
                 } else {
-                    BX_INFO('get online token failed', tagLog);
+                    BX_INFO('get online token failed', tagLog());
                     cb(null)
                 }
             })
@@ -874,7 +861,7 @@ function getCacheToken(cb) {
 
 function saveCacheToekn(token, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start saveCacheToekn.', token, tagLog);
+    BX_INFO('!!!!start saveCacheToekn.', token, tagLog());
     // console.log(arguments)
     let rs = thisRuntime.getRuntimeStorage('/chatroom/')
 
@@ -885,7 +872,7 @@ function saveCacheToekn(token, cb) {
 
 function getQRCode(sessionID, path, width, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start getQRCode.', path, width, tagLog);
+    BX_INFO('!!!!start getQRCode.', path, width, tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
@@ -893,12 +880,12 @@ function getQRCode(sessionID, path, width, cb) {
                 cb({ err });
             } else {
                 getCacheToken(function(token) {
-                    BX_INFO('get token', token, tagLog);
+                    BX_INFO('get token', token, tagLog());
                     getQR(token, path, width, function(result, body) {
-                        BX_INFO('get qr', result, tagLog);
+                        BX_INFO('get qr', result, tagLog());
                         if (result) {
                             upload(body, function(result, body) {
-                                BX_INFO('upload', result, body, tagLog);
+                                BX_INFO('upload', result, body, tagLog());
                                 if (body) {
                                     cb({ err: null, ret: body.url });
                                 } else {
@@ -919,11 +906,11 @@ function getQRCode(sessionID, path, width, cb) {
 
 function appendHistory(sessionID, roomid, historyid, cb) {
     let thisRuntime = getCurrentRuntime()
-    BX_INFO('!!!!start getHistoryCount.', tagLog);
+    BX_INFO('!!!!start getHistoryCount.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
 
-        BX_INFO('chatuser.getUserIDBySessionID', sessionID, roomid, historyid, tagLog);
+        BX_INFO('chatuser.getUserIDBySessionID', sessionID, roomid, historyid, tagLog());
 
         chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
             if (err) {
@@ -939,7 +926,7 @@ function appendHistory(sessionID, roomid, historyid, cb) {
                             let em = thisRuntime.getGlobalEventManager()
                             let eventName = 'room_event_' + roomid
                             em.fireEvent(eventName, JSON.stringify({ eventType: 'count' }));
-                            BX_INFO('fire event count', tagLog);
+                            BX_INFO('fire event count', tagLog());
                             cb({ err: null, ret });
                         })
                     } else {

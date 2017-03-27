@@ -1,6 +1,8 @@
 // pages/chatroom/enterroom.js
-var core = require('../../bucky/wx_core.js')
-let buckyhelper = require('../../utils/buckyhelper');
+const core = require('../../bucky/wx_core.js');
+const CallChain = core.CallChain;
+const setCurrentCallChain = core.setCurrentCallChain;
+const buckyhelper = require('../../utils/buckyhelper');
 
 Page({
   data:{
@@ -41,4 +43,4 @@ Page({
     }
     buckyhelper.enterChatRoom(roomid);
   },
-})
+});
