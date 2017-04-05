@@ -261,6 +261,12 @@ Page({
 
         let sessionID = buckyhelper.getSessionID();
 
+        wx.showToast({
+            title: '登录中',
+            icon: 'loading',
+            duration: 10000
+        });
+
         buckyhelper.buckyReady(this.data.appConfig, this.data.packages, () => {
             BX_INFO('buckyhelper.buckyReady', getCurrentTraceInfo());
             buckyhelper.getChatUserModule(chatuser => {
@@ -277,11 +283,7 @@ Page({
                     ccCheckSession.logEnd();
 
                     if (!isValid) {
-                        wx.showToast({
-                            title: '登录中',
-                            icon: 'loading',
-                            duration: 10000
-                        });
+
 
                         const ccUserLogin = new CallChain();
                         setCurrentCallChain(ccUserLogin);
@@ -315,6 +317,8 @@ Page({
 
                             this._updateUserInfo();
                             this._refreshRoomList();
+
+                            wx.hideToast();
                         });
                     }
                 });
