@@ -91,8 +91,9 @@ Page({
     });
   },
   OnLeaveRoom: function (event) {
+    let that = this;
     buckyhelper.getChatRoomModule(function (chatroom) {
-      chatroom.leaveChatRoom(buckyhelper.getSessionID(), openid, function (ret) {
+      chatroom.leaveChatRoom(buckyhelper.getSessionID(), that.data.id, function (ret) {
         wx.navigateBack({
           delta: 5
         });

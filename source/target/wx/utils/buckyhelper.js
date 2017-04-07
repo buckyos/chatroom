@@ -36,9 +36,9 @@ function loadPackageModule(packageName, moduleName, cb) {
         cb(localmodules[packageName + "_" + moduleName]);
     } else {
         let thisRuntime = core.getCurrentRuntime();
-        thisRuntime.loadXARPackage(packageName, function (pkg) {
+        thisRuntime.loadXARPackage(packageName, function(pkg) {
             console.assert(pkg != null);
-            pkg.loadModule(moduleName, function (mod) {
+            pkg.loadModule(moduleName, function(mod) {
                 console.assert(mod != null);
                 localmodules[packageName + "_" + moduleName] = mod;
                 cb(mod);
@@ -63,7 +63,7 @@ function getHistoryModule(cb) {
 function buckyReady(appConfig, packages, cb) {
     let tacApp = new core.Application();
     core.setCurrentApp(tacApp);
-    tacApp.init(appConfig, function (errorCode, metaInfo) {
+    tacApp.init(appConfig, function(errorCode, metaInfo) {
         core.initCurrentRuntime(packages);
         console.log('tac app init completed');
         let thisRuntime = core.getCurrentRuntime();
@@ -71,7 +71,7 @@ function buckyReady(appConfig, packages, cb) {
         km.dependKnowledge("global.loadrules", core.InfoNode.TYPE_OBJECT);
         km.dependKnowledge("global.storages", core.InfoNode.TYPE_MAP);
         km.dependKnowledge("global.devices", core.InfoNode.TYPE_MAP);
-        km.ready(function (isReady) {
+        km.ready(function(isReady) {
             if (isReady) {
                 console.log("update knowledge ok");
                 cb();
@@ -85,11 +85,11 @@ function buckyReady(appConfig, packages, cb) {
 function enterChatRoom(roomid) {
     let openid = getSessionID();
 
-    getChatRoomModule(function (chatroom) {
-        chatroom.getRoomInfo(getSessionID(), roomid, function (roominfo) {
+    getChatRoomModule(function(chatroom) {
+        chatroom.getRoomInfo(getSessionID(), roomid, function(roominfo) {
             console.log('roominfo', roominfo);
             if (roominfo) {
-                chatroom.enterChatRoom(getSessionID(), roomid, openid, function (result) {
+                chatroom.enterChatRoom(getSessionID(), roomid, null, function(result) {
                     console.assert(result.err == null, result.err);
                     console.assert(result.ret);
 
@@ -101,10 +101,20 @@ function enterChatRoom(roomid) {
                     } else if (false) {
                         wx.getLocation({
                             type: 'gcj02', // 默认为 wgs84 返回 gps 坐标，gcj02 返回可用于 wx.openLocation 的坐标
-                            success: function (res) {
-                                enterChatRoom(roomid, openid, res.latitude, res.longitude)
+                            success: function(res) {
+                                chatroom.enterChatRoom(getSessionID(), roomid, { latitude: res.latitude, longitude: res.longitude, accuracy: 10 }, (result) => {
+                                    console.assert(result.err == null, result.err);
+                                    console.assert(result.ret);
+
+                                    console.log('enter chat room result', result.ret);
+                                    if (result.ret) {
+                                        wx.navigateTo({
+                                            url: `../chatroom/chatroom?id=${roominfo.id}`
+                                        });
+                                    }
+                                });
                             },
-                            fail: function () {
+                            fail: function() {
                                 wx.showToast({
                                     title: '房主限定了加入位置，无法进入!'
                                 });
@@ -126,7 +136,7 @@ function enterChatRoom(roomid) {
 }
 
 function getRoomInfoByRoomIds(rooms, cb) {
-    getChatRoomModule(function (chatroom) {
+    getChatRoomModule(function(chatroom) {
         if (rooms.length == 0) {
             cb([]);
         } else {
@@ -154,8 +164,8 @@ function getRoomInfo(id, cb, force) {
     if (!force && cachedRoomInfos[id]) {
         cb(cachedRoomInfos[id])
     } else {
-        getChatRoomModule(function (chatroom) {
-            chatroom.getRoomInfo(getSessionID(), id, function (roominfo) {
+        getChatRoomModule(function(chatroom) {
+            chatroom.getRoomInfo(getSessionID(), id, function(roominfo) {
                 console.assert(roominfo.err == null, roominfo.err);
                 console.assert(roominfo.ret);
 
@@ -172,8 +182,8 @@ function getUserInfo(openid, cb, force) {
     if (!force && cachedUserInfos[openid]) {
         cb(cachedUserInfos[openid])
     } else {
-        getChatUserModule(function (user) {
-            user.getUserInfo(getSessionID(), openid, function (userinfo) {
+        getChatUserModule(function(user) {
+            user.getUserInfo(getSessionID(), openid, function(userinfo) {
                 console.assert(userinfo.err == null, userinfo.err);
                 console.assert(userinfo.ret);
 
@@ -207,8 +217,8 @@ function getAllUserInfos(users, cb) {
 }
 
 function getRoomUserInfos(roomid, cb) {
-    getChatRoomModule(function (chatroom) {
-        getRoomInfo(roomid, function (roomInfo) {
+    getChatRoomModule(function(chatroom) {
+        getRoomInfo(roomid, function(roomInfo) {
             getAllUserInfos(roomInfo.users, cb);
         });
     });

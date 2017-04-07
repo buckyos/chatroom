@@ -72,7 +72,14 @@ function addHistory(sessionID, roomid, from, to, content, type, cb) {
     BX_INFO('!!!!start addHistory.', tagLog());
 
     packageLoader('chatuser', 'chatuser', function(chatuser) {
-        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: from }) {
+        chatuser.getUserIDBySessionID(sessionID, function(result) {
+            let err = 'server rpc error';
+            let from = null;
+            if (result) {
+                err = result.err;
+                from = result.ret;
+            }
+
             BX_INFO(' chatuser.getUserIDBySessionID callback', err, from, tagLog());
             if (err) {
                 BX_ERROR('getUserIDBySessionID callback', err, sessionID, roomid, content, from, to, tagLog());
@@ -148,7 +155,14 @@ function getHistory(sessionID, historyid, cb) {
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         BX_INFO('chatuser.getUserIDBySessionID', sessionID, historyid, tagLog());
 
-        chatuser.getUserIDBySessionID(sessionID, function({ err, ret: userid }) {
+        chatuser.getUserIDBySessionID(sessionID, function(result) {
+            let err = 'server rpc error';
+            let userid = null;
+            if (result) {
+                err = result.err;
+                userid = result.ret;
+            }
+            
             if (err) {
                 cb({ err });
             } else {
