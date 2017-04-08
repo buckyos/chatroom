@@ -34,6 +34,11 @@ function chatUserLogin(onComplete) {
                 BX_INFO("will chatuser.login", getCurrentTraceInfo());
                 // 2. 再登录会聊
                 chatuser.login(res.code, function (ret) {
+                    if (ret == null) {
+                        BX_ERROR('chat user login return null');
+                        onComplete(false);
+                        return;
+                    }
                     BX_INFO(`chatuser.login callback sessionID=${ret.sessionid} err=${ret.err}`, getCurrentTraceInfo());
                     if (ret.sessionid) {
                         buckyhelper.setSessionID(ret.sessionid);
