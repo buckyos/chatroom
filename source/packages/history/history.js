@@ -1,6 +1,6 @@
 "use strict";
-const util = require('util');
-// let chatroom = require('./chatroom')
+
+
 // 聊天记录
 
 function tagLog() {
@@ -51,27 +51,28 @@ function getNextHistoryID(rs, cb) {
                 } else {
                     cb(null);
                 }
-            })
+            });
         } else {
             BX_INFO('getNextHistoryID get next history id callback init id', tagLog());
             let initData = { id: 12122 }
             rs.setObject(nexthistoryid, initData, function(objId, result) {
                 BX_INFO('getNextHistoryID set object2 callback', initData, result, tagLog());
                 if (result) {
-                    cb(initData.id)
+                    cb(initData.id);
                 } else {
-                    cb(null)
+                    cb(null);
                 }
-            })
+            });
         }
-    })
+    });
 }
 
 function addHistory(sessionID, roomid, from, to, content, type, cb) {
     let thisRuntime = getCurrentRuntime()
     BX_INFO('!!!!start addHistory.', tagLog());
 
-    packageLoader('chatuser', 'chatuser', function(chatuser) {
+    packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
+        BX_INFO('chatuser module', chatuser);
         chatuser.getUserIDBySessionID(sessionID, function(result) {
             let err = 'server rpc error';
             let from = null;
@@ -86,9 +87,9 @@ function addHistory(sessionID, roomid, from, to, content, type, cb) {
                 cb({ err });
             } else {
 
-                let rs = thisRuntime.getRuntimeStorage('/chathistory/')
+                let rs = thisRuntime.getRuntimeStorage('/chathistory/');
 
-                loadPackageModule('chatroom_proxy', 'chatroom', function(chatroom) {
+                packageLoader('chatroom_proxy', 'chatroom', function(chatroom) {
                     BX_INFO('loadPackageModule callback', chatroom, tagLog());
 
                     chatroom.getRoomInfo(sessionID, roomid, function(roominfo) {
@@ -115,19 +116,19 @@ function addHistory(sessionID, roomid, from, to, content, type, cb) {
                                         chatroom.appendHistory(sessionID, roomid, historyid, function(ret) {
                                             BX_INFO('chatroom.appendHistory callback', ret, tagLog());
                                             cb({ err: null, ret: ret.ret });
-                                        })
+                                        });
                                     } else {
                                         BX_ERROR("setStorage Failed", tagLog());
                                         cb({ err: `setStorage Failed`, ret: false });
                                     }
-                                })
-                            })
+                                });
+                            });
                         } else {
                             BX_ERROR("no roominfo", tagLog());
                             cb({ err: `could not find room id by ${roomid}`, ret: false });
                         }
-                    })
-                })
+                    });
+                });
 
             }
         });
@@ -136,16 +137,6 @@ function addHistory(sessionID, roomid, from, to, content, type, cb) {
 
 
 }
-
-function loadPackageModule(packageName, modName, cb) {
-    let thisRuntime = getCurrentRuntime();
-    thisRuntime.loadXARPackage(packageName, function(pkg) {
-        pkg.loadModule(modName, function(mod) {
-            cb(mod)
-        })
-    })
-}
-
 
 
 function getHistory(sessionID, historyid, cb) {
@@ -166,7 +157,7 @@ function getHistory(sessionID, historyid, cb) {
             if (err) {
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chathistory/')
+                let rs = thisRuntime.getRuntimeStorage('/chathistory/');
 
                 rs.getObject(historyid, function(objid, info) {
                     packageLoader('chatroom_proxy', 'chatroom', function(chatroom) {
@@ -203,7 +194,7 @@ function getHistory(sessionID, historyid, cb) {
 
                     });
 
-                })
+                });
             }
         });
     });
@@ -231,6 +222,7 @@ function getHistory(sessionID, historyid, cb) {
 //   })
 // }
 
-module.exports = {}
-module.exports.getHistory = getHistory
-module.exports.addHistory = addHistory
+module.exports = {
+    getHistory,
+    addHistory
+};
