@@ -15,8 +15,8 @@ let md5 = function(str) {
 }
 /* 由于url包含敏感信息，将appid和secret部分去掉，需填入自己小程序的appid和secret*/
 function getOpenID(authCode, cb) {
-    let appid = 'wxcacb9d625cb8aa80';
-    let secret = '82075a2216f41f70a553c55a9b46b903';
+    let appid = '{{wxappid}}';
+    let secret = '{{wxsecret}}';
     let url = `https://api.weixin.qq.com/sns/jscode2session?appid=${appid}&secret=${secret}&js_code=${authCode}&grant_type=authorization_code`;
 
     request(url, function(err, resp, body) {

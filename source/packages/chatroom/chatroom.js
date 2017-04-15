@@ -1,8 +1,6 @@
 "use strict";
 
-let assert = require('assert')
-let request = require('request')
-// let history = require('history')
+let request = require('request');
 
 function tagLog() {
     // return 'chatroom__server'; 
@@ -33,7 +31,7 @@ function getPackageLoader() {
                 });
             });
         }
-    }
+    };
 }
 
 const packageLoader = getPackageLoader();
@@ -46,18 +44,18 @@ const packageLoader = getPackageLoader();
 // accuracy 精确度
 
 function getNextRoomID(rs, cb) {
-    let nextroomid = 'nextroom__id'
+    let nextroomid = 'nextroom__id';
     rs.getObject(nextroomid, function(objid, obj) {
         if (obj) {
             rs.setObject(nextroomid, { id: obj.id + 1 }, function(objid, result) {
-                cb(obj.id + 1)
-            })
+                cb(obj.id + 1);
+            });
         } else {
             rs.setObject(nextroomid, { id: 12122 }, function(objid, result) {
-                cb(12122)
-            })
+                cb(12122);
+            });
         }
-    })
+    });
 }
 
 let createRoomIDList = 'createRoomIDList';
@@ -79,18 +77,18 @@ function addCreateRoomLink(rs, userid, roomid, cb) {
                 cb(result);
             });
         }
-    })
+    });
 }
 
 function createRoomEvent(id, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     let em = thisRuntime.getGlobalEventManager();
 
     let eventName = 'room_event_' + id;
     em.createEvent(eventName, function(result) {
         BX_INFO('create event', eventName, result, tagLog());
         cb(result);
-    })
+    });
 }
 
 // gps = null or {latitude: 0.0, longitude: 1.1, accuracy: 10}
@@ -100,7 +98,7 @@ function createRoom(sessionID, roomname, expiretime, gps, cb) {
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -109,7 +107,7 @@ function createRoom(sessionID, roomname, expiretime, gps, cb) {
             if (err) {
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
                 getNextRoomID(rs, function(id) {
                     let newRoom = {
@@ -122,7 +120,7 @@ function createRoom(sessionID, roomname, expiretime, gps, cb) {
                         gps: gps,
                         enableGPS: gps === null,
                         time: new Date().getTime()
-                    }
+                    };
 
                     BX_INFO('set object', id, newRoom, tagLog());
                     createRoomEvent(id, function(result) {
@@ -132,7 +130,7 @@ function createRoom(sessionID, roomname, expiretime, gps, cb) {
                             rs.setObject(id, newRoom, function(objid, result) {
                                 addCreateRoomLink(rs, userid, id, function() {
                                     cb({ err: null, ret: newRoom });
-                                })
+                                });
                             });
                         } else {
                             BX_ERROR('create room event failed, result', result, tagLog());
@@ -147,7 +145,7 @@ function createRoom(sessionID, roomname, expiretime, gps, cb) {
 
 // 显示已创建的房间
 function listChatRoom(sessionID, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start list room.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
@@ -165,9 +163,9 @@ function listChatRoom(sessionID, cb) {
             if (err) {
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
-                let userCreateRooms = createRoomIDList + '_' + userid
+                let userCreateRooms = createRoomIDList + '_' + userid;
                 BX_INFO('userCreateRooms', userCreateRooms, tagLog());
                 rs.getObject(userCreateRooms, function(objid, roomlist) {
                     BX_INFO('roomlist', roomlist, tagLog());
@@ -181,13 +179,13 @@ function listChatRoom(sessionID, cb) {
 
 // 显示所有进入的房间
 function listAllChatRoom(sessionID, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start list all room.', tagLog());
-    let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+    let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -210,10 +208,9 @@ function listAllChatRoom(sessionID, cb) {
 }
 
 function _removeCreateRooms(rs, userid, roomid, cb) {
-    let thisRuntime = getCurrentRuntime()
     BX_INFO('!!!!start remove create room.', tagLog());
 
-    let userCreateRooms = createRoomIDList + '_' + userid
+    let userCreateRooms = createRoomIDList + '_' + userid;
     rs.getObject(userCreateRooms, function(objid, roomlist) {
         if (roomlist) {
             for (let index in roomlist) {
@@ -222,65 +219,63 @@ function _removeCreateRooms(rs, userid, roomid, cb) {
                         if (roominfo) {
                             if (roominfo.admin === userid) {
 
-                                roomlist.splice(index, 1)
+                                roomlist.splice(index, 1);
                                 BX_INFO('after remove list', roomlist, roomid, tagLog());
                                 rs.setObject(userCreateRooms, roomlist, function(objid, result) {
                                     BX_INFO('remove callback', result, tagLog());
-                                    cb(result)
-                                })
+                                    cb(result);
+                                });
                             }
                         } else {
                             cb(false);
                         }
                     });
 
-
-                    break
+                    break;
                 }
             }
-            cb(false)
+            cb(false);
             BX_INFO('could not get roomid', roomid, 'in roomlist', roomlist, tagLog());
         } else {
-            cb(false)
+            cb(false);
             BX_INFO('could not get create rooms', userCreateRooms, roomlist, tagLog());
         }
-    })
+    });
 }
 
 function _removeEnterRooms(rs, userid, roomid, cb) {
-    let thisRuntime = getCurrentRuntime()
     BX_INFO('!!!!start remove enter room.', tagLog());
 
-    let userEnterRooms = enterRoomIDList + '_' + userid
+    let userEnterRooms = enterRoomIDList + '_' + userid;
     rs.getObject(userEnterRooms, function(objid, roomlist) {
         if (roomlist) {
             for (let index in roomlist) {
                 if (roomid == roomlist[index]) {
-                    roomlist.splice(index, 1)
+                    roomlist.splice(index, 1);
                     BX_INFO('after remove list', roomlist, roomid, tagLog());
                     rs.setObject(userEnterRooms, roomlist, function(objid, result) {
                         BX_INFO('remove callback', result, tagLog());
-                        cb(result)
-                    })
-                    break
+                        cb(result);
+                    });
+                    break;
                 }
             }
-            cb(false)
+            cb(false);
             BX_ERROR('could not get roomid', roomid, 'in roomlist', roomlist, tagLog());
         } else {
-            cb(false)
+            cb(false);
             BX_ERROR('could not get enter rooms', userEnterRooms, roomlist, tagLog());
         }
-    })
+    });
 }
 
 function destroyChatRoom(sessionID, roomid, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start destroy room.', sessionID, roomid, tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -290,7 +285,7 @@ function destroyChatRoom(sessionID, roomid, cb) {
             if (err) {
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
                 _removeCreateRooms(rs, userid, roomid, function(result) {
                     if (result) {
@@ -299,19 +294,19 @@ function destroyChatRoom(sessionID, roomid, cb) {
                                 rs.removeObject(roomid, function(objid, ret) {
                                     let em = thisRuntime.getGlobalEventManager();
                                     let eventName = 'room_event_' + roomid;
-                                    em.removeEvent(eventName, function() {})
+                                    em.removeEvent(eventName, function() {});
                                     cb({ err: null, ret });
                                     // let em = thisRuntime.getGlobalEventManager()
                                     // em.fireEvent('destroy_' + id, roomid)
-                                })
+                                });
                             } else {
                                 cb({ err: `can't destory room ${roomid}`, ret: false });
                             }
-                        })
+                        });
                     } else {
                         cb({ err: `can't destory room ${roomid}`, ret: false });
                     }
-                })
+                });
             }
         });
     });
@@ -320,12 +315,12 @@ function destroyChatRoom(sessionID, roomid, cb) {
 }
 
 function getRoomInfo(sessionID, roomid, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start getRoomInfo.', sessionID, roomid, cb, tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -335,7 +330,7 @@ function getRoomInfo(sessionID, roomid, cb) {
                 BX_ERROR('getUserIDBySessionID callback', err, cb, typeof cb, tagLog());
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
                 rs.getObject(roomid, function(objid, roominfo) {
                     if (roominfo) {
@@ -358,12 +353,12 @@ function getRoomInfo(sessionID, roomid, cb) {
 
 // 获取公告板
 function getBBS(sessionID, roomid, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start getBBS.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -373,7 +368,7 @@ function getBBS(sessionID, roomid, cb) {
                 BX_ERROR('chatuser.getUserIDBySessionID callback', err, userid, tagLog());
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
                 rs.getObject(roomid, function(objid, roominfo) {
                     BX_INFO('get bbs return ', roominfo, tagLog());
@@ -392,7 +387,7 @@ function getBBS(sessionID, roomid, cb) {
                     }
 
 
-                })
+                });
             }
         });
     });
@@ -400,12 +395,12 @@ function getBBS(sessionID, roomid, cb) {
 }
 
 function setBBS(sessionID, roomid, bbs, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start setBBS.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -414,23 +409,23 @@ function setBBS(sessionID, roomid, bbs, cb) {
             if (err) {
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
                 rs.getObject(roomid, function(objid, roominfo) {
                     if (roominfo.admin != userid) {
-                        cb({ err: `Invalid permissions `, ret: false })
+                        cb({ err: `Invalid permissions `, ret: false });
                     } else {
-                        roominfo.bbs = bbs
-                        roominfo.bbsTime = new Date().getTime()
-                        rs.setObject(roomid, roominfo, function() {})
+                        roominfo.bbs = bbs;
+                        roominfo.bbsTime = new Date().getTime();
+                        rs.setObject(roomid, roominfo, function() {});
                         cb({ err: null, ret: true });
 
-                        let em = thisRuntime.getGlobalEventManager()
-                        let eventName = 'room_event_' + roomid
+                        let em = thisRuntime.getGlobalEventManager();
+                        let eventName = 'room_event_' + roomid;
                         em.fireEvent(eventName, JSON.stringify({ eventType: 'bbs', value1: roominfo.bbs, value2: roominfo.bbsTime }));
                         BX_INFO('fire event bbs', eventName, roomid, roominfo.bbs, roominfo.bbsTime, tagLog());
                     }
-                })
+                });
             }
         });
     });
@@ -438,12 +433,12 @@ function setBBS(sessionID, roomid, bbs, cb) {
 }
 
 function getAdmin(sessionID, roomid, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start getAdmin.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -452,7 +447,7 @@ function getAdmin(sessionID, roomid, cb) {
             if (err) {
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
                 rs.getObject(roomid, function(objid, roominfo) {
                     if (roominfo) {
@@ -476,24 +471,24 @@ function getAdmin(sessionID, roomid, cb) {
 function _addEnterRoomLink(rs, roomid, userid, cb) {
     BX_INFO('_addEnterRoomLink', roomid, userid, tagLog());
 
-    let userEnterRooms = enterRoomIDList + '_' + userid
+    let userEnterRooms = enterRoomIDList + '_' + userid;
     rs.getObject(userEnterRooms, function(objid, roomlist) {
         if (roomlist) {
             if (roomlist.indexOf(roomid) == -1) {
-                roomlist.push(roomid)
+                roomlist.push(roomid);
             }
             rs.setObject(userEnterRooms, roomlist, function(objid, result) {
                 BX_INFO('save enter room', userEnterRooms, roomlist, result);
-                cb(result)
-            })
+                cb(result);
+            });
         } else {
-            roomlist = [roomid]
+            roomlist = [roomid];
             rs.setObject(userEnterRooms, roomlist, function(objid, result) {
                 BX_INFO('save enter room', userEnterRooms, roomlist, result);
-                cb(result)
-            })
+                cb(result);
+            });
         }
-    })
+    });
 }
 
 // return
@@ -504,12 +499,12 @@ function _addEnterRoomLink(rs, roomid, userid, cb) {
 
 // gps = null or {latitude: 0.0, longitude: 1.1, accuracy: 10}
 function enterChatRoom(sessionID, roomid, gps, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start enterChatRoom.', "sessionID", sessionID, "roomid", roomid, "gps", gps, "cb", cb, tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -518,7 +513,7 @@ function enterChatRoom(sessionID, roomid, gps, cb) {
             if (err) {
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
                 rs.getObject(roomid, function(objid, roominfo) {
                     if (roominfo) {
@@ -537,38 +532,38 @@ function enterChatRoom(sessionID, roomid, gps, cb) {
                             // 假定经纬度偏差绝对值都是30度
                             if (gps == null) {
                                 cb({ err: `need gps param`, ret: 1 });
-                                return
+                                return;
                             } else {
-                                let delta = 30
+                                let delta = 30;
                                 if (Math.abs(gps.latitude - roominfo.gps.latitude) < delta &&
                                     Math.abs(gps.longitude - roominfo.gps.longitude)) {
                                     cb({ err: `need gps param`, ret: 1 });
                                 } else {
                                     cb({ err: `gps is not match`, ret: 2 });
-                                    return
+                                    return;
                                 }
                             }
                         } else {
-                            roominfo.users.push(userid)
+                            roominfo.users.push(userid);
                             rs.setObject(roomid, roominfo, function(objid, result) {
                                 packageLoader('history_proxy', 'history', function(history) {
                                     chatuser.getUserInfo(sessionID, userid, function(userinfo) {
                                         history.addHistory(sessionID, roomid, null, null, `${userinfo.nickName} 进入房间`, 2, function() {
 
-                                        })
-                                    })
+                                        });
+                                    });
                                 });
 
-                            })
+                            });
                         }
 
                         _addEnterRoomLink(rs, roomid, userid, function() {
                             cb({err:null, ret:0});
-                        })
+                        });
                     } else {
                         cb({ err: `could not get room id ${roomid}`, ret: 3 });
                     }
-                })
+                });
             }
         });
     });
@@ -576,12 +571,12 @@ function enterChatRoom(sessionID, roomid, gps, cb) {
 }
 
 function leaveChatRoom(sessionID, roomid, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start leaveChatRoom.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -590,36 +585,36 @@ function leaveChatRoom(sessionID, roomid, cb) {
             if (err) {
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
                 rs.getObject(roomid, function(objid, roominfo) {
                     if (roominfo) {
                         for (let index in roominfo.users) {
                             if (roominfo.users[index] == userid) {
-                                roominfo.users.splice(index, 1)
+                                roominfo.users.splice(index, 1);
                                 cb({ err: null, ret: true });
 
                                 packageLoader('history_proxy', 'history', function(history) {
                                     chatuser.getUserInfo(sessionID, userid, function(userinfo) {
                                         history.addHistory(sessionID, roomid, null, null, `${userinfo.nickName} 离开房间`, 2, function() {
 
-                                        })
-                                    })
-                                })
+                                        });
+                                    });
+                                });
 
-                                rs.setObject(roomid, roominfo, function() {})
+                                rs.setObject(roomid, roominfo, function() {});
 
-                                let userEnterRooms = enterRoomIDList + '_' + userid
+                                let userEnterRooms = enterRoomIDList + '_' + userid;
                                 rs.getObject(userEnterRooms, function(objid, roomlist) {
                                     if (roomlist) {
-                                        let idx = roomlist.indexOf(roomid)
+                                        let idx = roomlist.indexOf(roomid);
                                         if (idx != -1) {
-                                            roomlist.splice(idx)
+                                            roomlist.splice(idx);
                                         }
-                                        rs.setObject(userEnterRooms, roomlist, function() {})
+                                        rs.setObject(userEnterRooms, roomlist, function() {});
                                     }
-                                })
-                                return
+                                });
+                                return;
                             }
                         }
 
@@ -627,7 +622,7 @@ function leaveChatRoom(sessionID, roomid, cb) {
                     } else {
                         cb({ err: null, ret: false });
                     }
-                })
+                });
             }
         });
     });
@@ -635,12 +630,12 @@ function leaveChatRoom(sessionID, roomid, cb) {
 }
 
 function getUserCount(sessionID, roomid, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start getUserCount.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -649,7 +644,7 @@ function getUserCount(sessionID, roomid, cb) {
             if (err) {
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
                 rs.getObject(roomid, function(objid, roominfo) {
                     if (roominfo) {
@@ -663,7 +658,7 @@ function getUserCount(sessionID, roomid, cb) {
                     } else {
                         cb({ err: null, ret: 0 });
                     }
-                })
+                });
             }
         });
     });
@@ -673,12 +668,12 @@ function getUserCount(sessionID, roomid, cb) {
 // start, end 用于分页
 function getUserList(sessionID, roomid, start, end, cb) {
     // 返回 user id list
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start getUserList.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -687,7 +682,7 @@ function getUserList(sessionID, roomid, start, end, cb) {
             if (err) {
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
                 rs.getObject(roomid, function(objid, roominfo) {
                     if (roominfo) {
@@ -701,7 +696,7 @@ function getUserList(sessionID, roomid, start, end, cb) {
                     } else {
                         cb({ err: null, ret: [] });
                     }
-                })
+                });
             }
         });
     });
@@ -709,12 +704,12 @@ function getUserList(sessionID, roomid, start, end, cb) {
 }
 
 function getHistoryCount(sessionID, roomid, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start getHistoryCount.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -724,7 +719,7 @@ function getHistoryCount(sessionID, roomid, cb) {
                 BX_ERROR('getUserIDBySessionID callback', sessionID, err, cb, tagLog());
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
                 rs.getObject(roomid, function(objid, roominfo) {
                     if (roominfo) {
@@ -738,7 +733,7 @@ function getHistoryCount(sessionID, roomid, cb) {
                     } else {
                         cb({ err: null, ret: [] });
                     }
-                })
+                });
             }
         });
     });
@@ -748,12 +743,12 @@ function getHistoryCount(sessionID, roomid, cb) {
 // start, end 用于分页
 function getHistoryList(sessionID, roomid, start, end, cb) {
     // 返回record id list
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start getHistoryList.', roomid, start, end, tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -763,7 +758,7 @@ function getHistoryList(sessionID, roomid, start, end, cb) {
                 BX_ERROR('getUserIDBySessionID callback', sessionID, err, cb, tagLog());
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
                 rs.getObject(roomid, function(objid, roominfo) {
                     if (roominfo) {
@@ -771,10 +766,10 @@ function getHistoryList(sessionID, roomid, start, end, cb) {
                         if (u) {
                             BX_INFO('history list length,', roominfo.history.length, tagLog());
                             if (end <= 0 || end > roominfo.history.length) {
-                                end = 0
+                                end = 0;
                             }
                             if (start <= 0 || start > roominfo.history.length) {
-                                start = 0
+                                start = 0;
                             }
                             const historyList = roominfo.history.slice(start, end);
                             BX_INFO('get history list return', historyList, start, end, roominfo.history, tagLog());
@@ -787,7 +782,7 @@ function getHistoryList(sessionID, roomid, start, end, cb) {
                         BX_ERROR('could not find roomid,', roomid, tagLog());
                         cb({ err: null, ret: [] });
                     }
-                })
+                });
             }
         });
     });
@@ -797,7 +792,7 @@ function getHistoryList(sessionID, roomid, start, end, cb) {
 function getHistoryListInfo(sessionID, roomid, start, end, cb) {
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -810,19 +805,21 @@ function getHistoryListInfo(sessionID, roomid, start, end, cb) {
                     if (idList.length == 0) {
                         cb({ err: null, ret: [] });
                     } else {
-                        let cnt = 0
-                        let info = []
-                        for (let i = 0; i < idList.length; i++) {
-                            history.getHistory(idList[i], function(info) {
-                                cnt++
-                                info.push(info)
-                                if (cnt == idList.length) {
-                                    cb({ err: null, ret: info });
-                                }
-                            })
-                        }
+                        let cnt = 0;
+                        let infos = [];
+                        packageLoader('history_proxy', 'history', function(history) {
+                            for (let i = 0; i < idList.length; i++) {
+                                history.getHistory(idList[i], function(info) {
+                                    cnt++;
+                                    infos.push(info);
+                                    if (cnt == idList.length) {
+                                        cb({ err: null, ret: infos });
+                                    }
+                                });
+                            }
+                        });
                     }
-                })
+                });
             }
         });
     });
@@ -833,16 +830,15 @@ function getHistoryListInfo(sessionID, roomid, start, end, cb) {
 /*由于此处涉及私有appid,secret,对外发布的代码GetQRCode功能将不能直接使用，需填入自己小程序的appid和secret*/
 
 function getToken(cb) {
-    let thisRuntime = getCurrentRuntime()
     BX_INFO('!!!!start getToken.', tagLog());
 
-    let appid = ''
-    let secret = ''
-    let tokenUrl = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appid}&secret=${secret}`
+    let appid = '{{wxappid}}';
+    let secret = '{{wxsecret}}';
+    let tokenUrl = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appid}&secret=${secret}`;
 
     request(tokenUrl, function(err, res, body) {
-        cb(err, err === null ? JSON.parse(body) : null)
-    })
+        cb(err, err === null ? JSON.parse(body) : null);
+    });
 }
 
 // getToken(function(err, body) {
@@ -850,43 +846,42 @@ function getToken(cb) {
 // })
 
 function getQRFromServer(token, path, width, cb) {
-    let thisRuntime = getCurrentRuntime()
     BX_INFO('!!!!start getQRFromServer.', token, path, width, tagLog());
 
-    let url = `https://api.weixin.qq.com/cgi-bin/wxaapp/createwxaqrcode?access_token=${token}`
+    let url = `https://api.weixin.qq.com/cgi-bin/wxaapp/createwxaqrcode?access_token=${token}`;
     request.post({ url: url, body: JSON.stringify({ path: path, width: width }), encoding: null }, function(err, res, body) {
         if (err === null && res.headers['content-type'] === 'image/jpeg') {
-            cb(true, body)
+            cb(true, body);
         } else {
-            cb(false, JSON.parse(body))
+            cb(false, JSON.parse(body));
         }
-    })
+    });
 }
 
 function getQR(token, path, width, cb) {
-    let thisRuntime = getCurrentRuntime()
+    
     BX_INFO('!!!!start getQR.', token, path, width, tagLog());
 
     function qrCallback(result, body) {
         if (result) {
-            cb(true, body)
+            cb(true, body);
         } else {
-            console.log('get qr failed, get token now')
+            console.log('get qr failed, get token now');
             getToken(function(err, tokenInfo) {
                 if (tokenInfo) {
-                    console.log('get token ok')
+                    console.log('get token ok');
                     getQRFromServer(tokenInfo.access_token, path, width, function(result, body) {
-                        cb(result, body)
-                    })
+                        cb(result, body);
+                    });
                 } else {
-                    console.log('could not get token')
-                    cb(false)
+                    console.log('could not get token');
+                    cb(false);
                 }
-            })
+            });
         }
     }
 
-    getQRFromServer(token, path, width, qrCallback)
+    getQRFromServer(token, path, width, qrCallback);
 }
 
 // getQR(tokenExpire, 'pages/index?query=1', 430, function (result, body) {
@@ -899,7 +894,7 @@ function getQR(token, path, width, cb) {
 // })
 
 function upload(buffer, cb) {
-    let thisRuntime = getCurrentRuntime()
+    
     BX_INFO('!!!!start upload.', tagLog());
 
     var formData = {
@@ -910,60 +905,60 @@ function upload(buffer, cb) {
                 contentType: 'image/jpg'
             }
         }
-    }
+    };
     /*微信小程序不支持通过post直接下载图片并显示，这里使用了私有的上传服务器，上传图片文件之后返回http地址*/
     request.post({ url: 'private upload server', formData: formData }, function(err, res, body) {
-        cb(err === null, JSON.parse(body))
-    })
+        cb(err === null, JSON.parse(body));
+    });
 }
 
-let tokenID = 'wxToken'
+let tokenID = 'wxToken';
 
 function getCacheToken(cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start getCacheToken.', tagLog());
     // console.log(arguments)
-    let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+    let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
     rs.getObject(tokenID, function(objid, token) {
         if (token) {
             BX_INFO('get storage token', token, tagLog());
-            cb(token)
+            cb(token);
         } else {
             BX_INFO('could not get storage token, get online now', tagLog());
             getToken(function(result, tokenInfo) {
                 if (result) {
                     BX_INFO('get token ok', tokenInfo, tagLog());
                     saveCacheToekn(tokenInfo.access_token, function() {
-                        cb(tokenInfo.access_token)
-                    })
+                        cb(tokenInfo.access_token);
+                    });
                 } else {
                     BX_INFO('get online token failed', tagLog());
-                    cb(null)
+                    cb(null);
                 }
-            })
+            });
         }
-    })
+    });
 }
 
 function saveCacheToekn(token, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start saveCacheToekn.', token, tagLog());
     // console.log(arguments)
-    let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+    let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
     rs.setObject(tokenID, token, function(objID, objItem) {
-        cb(objID, objItem)
-    })
+        cb(objID, objItem);
+    });
 }
 
 function getQRCode(sessionID, path, width, cb) {
-    let thisRuntime = getCurrentRuntime()
+    
     BX_INFO('!!!!start getQRCode.', path, width, tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -984,12 +979,12 @@ function getQRCode(sessionID, path, width, cb) {
                                 } else {
                                     cb({ err: `upload failed`, ret: null });
                                 }
-                            })
+                            });
                         } else {
                             cb({ err: `get qr code failed`, ret: null });
                         }
-                    })
-                })
+                    });
+                });
             }
         });
     });
@@ -998,7 +993,7 @@ function getQRCode(sessionID, path, width, cb) {
 }
 
 function appendHistory(sessionID, roomid, historyid, cb) {
-    let thisRuntime = getCurrentRuntime()
+    let thisRuntime = getCurrentRuntime();
     BX_INFO('!!!!start getHistoryCount.', tagLog());
 
     packageLoader('chatuser_proxy', 'chatuser', function(chatuser) {
@@ -1006,7 +1001,7 @@ function appendHistory(sessionID, roomid, historyid, cb) {
         BX_INFO('chatuser.getUserIDBySessionID', sessionID, roomid, historyid, tagLog());
 
         chatuser.getUserIDBySessionID(sessionID, function(result) {
-            let err = 'server rpc error'
+            let err = 'server rpc error';
             let userid = null;
             if (result) {
                 err = result.err;
@@ -1015,23 +1010,23 @@ function appendHistory(sessionID, roomid, historyid, cb) {
             if (err) {
                 cb({ err });
             } else {
-                let rs = thisRuntime.getRuntimeStorage('/chatroom/')
+                let rs = thisRuntime.getRuntimeStorage('/chatroom/');
 
                 rs.getObject(roomid, function(objid, roominfo) {
                     if (roominfo) {
-                        roominfo.history.push(historyid)
+                        roominfo.history.push(historyid);
                         rs.setObject(roomid, roominfo, function(id, ret) {
                             //临时写一个事件触发，只通知用户有消息更新了,触发客户端主动拉取
-                            let em = thisRuntime.getGlobalEventManager()
-                            let eventName = 'room_event_' + roomid
+                            let em = thisRuntime.getGlobalEventManager();
+                            let eventName = 'room_event_' + roomid;
                             em.fireEvent(eventName, JSON.stringify({ eventType: 'count' }));
                             BX_INFO('fire event count', tagLog());
                             cb({ err: null, ret });
-                        })
+                        });
                     } else {
                         cb({ err: null, ret: false });
                     }
-                })
+                });
             }
         });
     });
@@ -1039,21 +1034,22 @@ function appendHistory(sessionID, roomid, historyid, cb) {
 
 }
 
-module.exports = {}
-module.exports.createRoom = createRoom
-module.exports.listChatRoom = listChatRoom
-module.exports.listAllChatRoom = listAllChatRoom
-module.exports.destroyChatRoom = destroyChatRoom
-module.exports.getRoomInfo = getRoomInfo
-module.exports.getBBS = getBBS
-module.exports.setBBS = setBBS
-module.exports.getAdmin = getAdmin
-module.exports.enterChatRoom = enterChatRoom
-module.exports.leaveChatRoom = leaveChatRoom
-module.exports.getUserCount = getUserCount
-module.exports.getUserList = getUserList
-module.exports.getHistoryCount = getHistoryCount
-module.exports.getHistoryList = getHistoryList
-module.exports.getHistoryListInfo = getHistoryListInfo
-module.exports.getQRCode = getQRCode
-module.exports.appendHistory = appendHistory
+module.exports = {
+    createRoom,
+    listChatRoom,
+    listAllChatRoom,
+    destroyChatRoom,
+    getRoomInfo,
+    getBBS,
+    setBBS,
+    getAdmin,
+    enterChatRoom,
+    leaveChatRoom,
+    getUserCount,
+    getUserList,
+    getHistoryCount,
+    getHistoryList,
+    getHistoryListInfo,
+    getQRCode,
+    appendHistory,
+};
