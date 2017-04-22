@@ -908,7 +908,13 @@ function upload(buffer, cb) {
     };
     /*微信小程序不支持通过post直接下载图片并显示，这里使用了私有的上传服务器，上传图片文件之后返回http地址*/
     request.post({ url: 'private upload server', formData: formData }, function(err, res, body) {
-        cb(err === null, JSON.parse(body));
+        BX_INFO('upload', {err, res, body});
+        try {
+            cb(err === null, JSON.parse(body));
+        } catch (e) {
+            cb (false, null);
+        }
+        
     });
 }
 
